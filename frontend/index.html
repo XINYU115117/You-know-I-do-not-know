@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型实验室 · 看语言模型怎么想</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="logo">▣</span>
+    <div>
+      <h1>模型实验室</h1>
+      <p class="sub">看语言模型如何逐 Token 生成答案</p>
+    </div>
+  </div>
+  <div class="topbar-right">
+    <span class="model-badge">Qwen2.5-0.5B-Instruct</span>
+    <span id="status-badge" class="status status-idle">就绪</span>
+  </div>
+</header>
+
+<main id="chat" class="chat">
+  <div class="notice">
+    <p><strong>这是真实的模型运行过程，不是动画演示。</strong></p>
+    <p>你提问后，页面会展示模型如何把问题拆成 <span class="term" data-tip="模型眼中的“词块”——模型读文本的基本单位，不是单个字。比如“为什么”是一个 Token。">Token</span>，再一字一字"抽"出回答。所有概率、候选、选择都直接来自本机模型 Qwen2.5-0.5B 的真实输出。</p>
+    <p class="notice-tip">📖 看到带 <span class="term" data-tip="页面里的蓝色虚线词">虚线</span> 的词，鼠标悬停可看解释。</p>
+  </div>
+</main>
+
+<form id="form" class="inputbar" autocomplete="off">
+  <input id="input" type="text" maxlength="200" placeholder="输入你的问题（最多 100 个中文字符）…">
+  <button id="send" type="submit">生成</button>
+</form>
+
+<script src="app.js"></script>
+</body>
+</html>
