@@ -1,0 +1,944 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, 'PingFang SC',
+    'Microsoft YaHei', sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, 'SFMono-Regular', monospace;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --color-pop-yellow: var(--pop-yellow);
+  --color-pop-blue: var(--pop-blue);
+  --color-pop-purple: var(--pop-purple);
+  --color-pop-orange: var(--pop-orange);
+  --color-pop-pink: var(--pop-pink);
+  --color-pop-lime: var(--pop-lime);
+  --color-ink: var(--ink);
+  --color-paper: var(--paper);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  color-scheme: light;
+  --background: oklch(0.972 0.014 95);
+  --foreground: oklch(0.17 0.01 40);
+  --card: oklch(0.99 0.008 95);
+  --card-foreground: oklch(0.17 0.01 40);
+  --popover: oklch(0.99 0.008 95);
+  --popover-foreground: oklch(0.17 0.01 40);
+  --primary: oklch(0.17 0.01 40);
+  --primary-foreground: oklch(0.98 0.01 95);
+  --secondary: oklch(0.94 0.014 95);
+  --secondary-foreground: oklch(0.22 0.01 40);
+  --muted: oklch(0.95 0.012 95);
+  --muted-foreground: oklch(0.5 0.02 55);
+  --accent: oklch(0.66 0.2 352);
+  --accent-foreground: oklch(0.98 0.01 350);
+  --destructive: oklch(0.62 0.2 25);
+  --border: oklch(0.87 0.014 80);
+  --input: oklch(0.87 0.014 80);
+  --ring: oklch(0.17 0.01 40);
+  --chart-1: oklch(0.66 0.2 352);
+  --chart-2: oklch(0.72 0.13 298);
+  --chart-3: oklch(0.83 0.15 90);
+  --chart-4: oklch(0.82 0.16 128);
+  --chart-5: oklch(0.68 0.14 240);
+  --radius: 0.75rem;
+
+  /* Retro screenprint palette (flat, punchy). */
+  --pop-yellow: oklch(0.84 0.15 90);
+  --pop-blue: oklch(0.68 0.13 240);
+  --pop-purple: oklch(0.66 0.15 300);
+  --pop-orange: oklch(0.72 0.17 50);
+  --pop-pink: oklch(0.66 0.2 352);
+  --pop-lime: oklch(0.85 0.17 128);
+  --ink: oklch(0.17 0.01 40);
+  --paper: oklch(0.985 0.012 95);
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: oklch(0.145 0 0);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.205 0 0);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.205 0 0);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.922 0 0);
+  --primary-foreground: oklch(0.205 0 0);
+  --secondary: oklch(0.269 0 0);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.269 0 0);
+  --muted-foreground: oklch(0.708 0 0);
+  --accent: oklch(0.269 0 0);
+  --accent-foreground: oklch(0.985 0 0);
+  --destructive: oklch(0.704 0.191 22.216);
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.556 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --sidebar: oklch(0.205 0 0);
+  --sidebar-foreground: oklch(0.985 0 0);
+  --sidebar-primary: oklch(0.488 0.243 264.376);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.269 0 0);
+  --sidebar-accent-foreground: oklch(0.985 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.556 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    color-scheme: dark;
+    --background: oklch(0.145 0 0);
+    --foreground: oklch(0.985 0 0);
+    --card: oklch(0.205 0 0);
+    --card-foreground: oklch(0.985 0 0);
+    --popover: oklch(0.205 0 0);
+    --popover-foreground: oklch(0.985 0 0);
+    --primary: oklch(0.922 0 0);
+    --primary-foreground: oklch(0.205 0 0);
+    --secondary: oklch(0.269 0 0);
+    --secondary-foreground: oklch(0.985 0 0);
+    --muted: oklch(0.269 0 0);
+    --muted-foreground: oklch(0.708 0 0);
+    --accent: oklch(0.269 0 0);
+    --accent-foreground: oklch(0.985 0 0);
+    --destructive: oklch(0.704 0.191 22.216);
+    --border: oklch(1 0 0 / 10%);
+    --input: oklch(1 0 0 / 15%);
+    --ring: oklch(0.556 0 0);
+    --chart-1: oklch(0.87 0 0);
+    --chart-2: oklch(0.556 0 0);
+    --chart-3: oklch(0.439 0 0);
+    --chart-4: oklch(0.371 0 0);
+    --chart-5: oklch(0.269 0 0);
+    --sidebar: oklch(0.205 0 0);
+    --sidebar-foreground: oklch(0.985 0 0);
+    --sidebar-primary: oklch(0.488 0.243 264.376);
+    --sidebar-primary-foreground: oklch(0.985 0 0);
+    --sidebar-accent: oklch(0.269 0 0);
+    --sidebar-accent-foreground: oklch(0.985 0 0);
+    --sidebar-border: oklch(1 0 0 / 10%);
+    --sidebar-ring: oklch(0.556 0 0);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+@keyframes ai-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--tw-rotate, 0deg));
+  }
+  50% {
+    transform: translateY(-8px) rotate(var(--tw-rotate, 0deg));
+  }
+}
+
+@keyframes ai-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes ai-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes ai-pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 12px color-mix(in oklch, var(--primary) 0%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in oklch, var(--primary) 0%, transparent);
+  }
+}
+
+.animate-ai-float {
+  animation: ai-float 4s ease-in-out infinite;
+}
+.animate-ai-rise {
+  animation: ai-rise 0.5s ease-out both;
+}
+.animate-ai-pop {
+  animation: ai-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.animate-ai-pulse-ring {
+  animation: ai-pulse-ring 1.8s ease-out infinite;
+}
+
+/* ============================================================
+   Retro die-cut sticker shape system
+   A sticker = 3 stacked, identically-shaped layers:
+   white die-cut edge (largest) / ink outline / color fill,
+   with freeform content floating on top. Works for any shape
+   below because each layer just inherits the shape class.
+   ============================================================ */
+.sticker {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  isolation: isolate;
+  filter: drop-shadow(3px 4px 0 color-mix(in oklch, var(--ink) 22%, transparent));
+}
+.sticker__edge,
+.sticker__ink,
+.sticker__fill {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+}
+.sticker__edge {
+  background: var(--paper);
+  transform: scale(1.16);
+}
+.sticker__ink {
+  background: var(--ink);
+  transform: scale(1.075);
+}
+.sticker__content {
+  position: relative;
+  z-index: 1;
+}
+
+/* ---- Shapes: border-radius / clip-path / mask (no SVG) ---- */
+.shape-blob {
+  border-radius: 68% 32% 41% 59% / 55% 42% 58% 45%;
+}
+.shape-petal {
+  border-radius: 60% 40% 42% 58% / 58% 46% 54% 42%;
+}
+.shape-squircle {
+  border-radius: 40%;
+}
+.shape-arch {
+  border-radius: 999px 999px 26% 26%;
+}
+.shape-pill {
+  border-radius: 999px;
+}
+.shape-hex {
+  clip-path: polygon(25% 4%, 75% 4%, 98% 50%, 75% 96%, 25% 96%, 2% 50%);
+}
+.shape-diamond {
+  clip-path: polygon(50% 1%, 99% 50%, 50% 99%, 1% 50%);
+}
+.shape-arrow {
+  clip-path: polygon(0 28%, 58% 28%, 58% 6%, 100% 50%, 58% 94%, 58% 72%, 0 72%);
+}
+.shape-burst {
+  clip-path: polygon(
+    50% 0%,
+    58% 30%,
+    85% 15%,
+    70% 42%,
+    100% 50%,
+    70% 58%,
+    85% 85%,
+    58% 70%,
+    50% 100%,
+    42% 70%,
+    15% 85%,
+    30% 58%,
+    0% 50%,
+    30% 42%,
+    15% 15%,
+    42% 30%
+  );
+}
+/* Scalloped seal / flower via a union of radial-gradient masks. */
+.shape-seal {
+  --pet: radial-gradient(circle at 50% 50%, #000 40%, transparent 41%),
+    radial-gradient(circle at 50% 9%, #000 15%, transparent 16%),
+    radial-gradient(circle at 91% 50%, #000 15%, transparent 16%),
+    radial-gradient(circle at 50% 91%, #000 15%, transparent 16%),
+    radial-gradient(circle at 9% 50%, #000 15%, transparent 16%),
+    radial-gradient(circle at 79% 21%, #000 14%, transparent 15%),
+    radial-gradient(circle at 79% 79%, #000 14%, transparent 15%),
+    radial-gradient(circle at 21% 79%, #000 14%, transparent 15%),
+    radial-gradient(circle at 21% 21%, #000 14%, transparent 15%);
+  -webkit-mask: var(--pet);
+  mask: var(--pet);
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+/* Puffy cloud via three top bumps over a flat base. */
+.shape-cloud {
+  --cl: radial-gradient(circle at 26% 52%, #000 26%, transparent 27%),
+    radial-gradient(circle at 52% 40%, #000 33%, transparent 34%),
+    radial-gradient(circle at 76% 54%, #000 24%, transparent 25%),
+    linear-gradient(#000, #000);
+  -webkit-mask:
+    radial-gradient(circle at 26% 52%, #000 26%, transparent 27%),
+    radial-gradient(circle at 52% 40%, #000 33%, transparent 34%),
+    radial-gradient(circle at 76% 54%, #000 24%, transparent 25%),
+    linear-gradient(#000, #000) bottom / 100% 52% no-repeat;
+  mask:
+    radial-gradient(circle at 26% 52%, #000 26%, transparent 27%),
+    radial-gradient(circle at 52% 40%, #000 33%, transparent 34%),
+    radial-gradient(circle at 76% 54%, #000 24%, transparent 25%),
+    linear-gradient(#000, #000) bottom / 100% 52% no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+}
+
+/* Retro-bordered rectangular surface (for panels & cards). */
+.card-sticker {
+  border: 2.5px solid var(--ink);
+  border-radius: 1.1rem;
+  background: var(--card);
+  box-shadow: 5px 6px 0 color-mix(in oklch, var(--ink) 90%, transparent);
+}
+
+/* Chunky retro button with a hard offset shadow. */
+.btn-retro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border: 2.5px solid var(--ink);
+  border-radius: 999px;
+  padding: 0.7rem 1.5rem;
+  font-weight: 600;
+  color: var(--ink);
+  box-shadow: 3px 4px 0 color-mix(in oklch, var(--ink) 85%, transparent);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+.btn-retro:hover {
+  transform: translateY(-2px);
+  box-shadow: 4px 6px 0 color-mix(in oklch, var(--ink) 85%, transparent);
+}
+.btn-retro:active {
+  transform: translateY(1px);
+  box-shadow: 1px 2px 0 color-mix(in oklch, var(--ink) 85%, transparent);
+}
+
+/* Wavy "mind" frame that evokes the inside-the-brain loop border. */
+.mind-frame {
+  border: 2.5px solid var(--ink);
+  border-radius: 1.6rem;
+  background:
+    radial-gradient(circle at 8px 8px, color-mix(in oklch, var(--ink) 14%, transparent) 1.5px, transparent 2px) 0 0 / 18px 18px,
+    var(--card);
+  box-shadow: 6px 7px 0 color-mix(in oklch, var(--ink) 88%, transparent);
+}
+
+@keyframes ai-wobble {
+  0%,
+  100% {
+    transform: translateY(0) rotate(var(--blob-rot, 0deg));
+  }
+  50% {
+    transform: translateY(-14px) rotate(calc(var(--blob-rot, 0deg) + 3deg));
+  }
+}
+.animate-ai-wobble {
+  animation: ai-wobble var(--blob-dur, 7s) ease-in-out infinite;
+  animation-delay: var(--blob-delay, 0s);
+}
+@media (prefers-reduced-motion: reduce) {
+  .animate-ai-wobble,
+  .animate-ai-float {
+    animation: none;
+  }
+}
+
+/* Figma 首页：四人环形主视觉整体旋转 */
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.home-page { font-family: var(--font-sans); }
+.brand-spark { font-size: 1.35em; line-height: 1; }
+.home-visual {
+  position: relative;
+  width: min(47vw, 54vh, 50rem);
+  aspect-ratio: 1.12;
+  margin-top: 30px;
+}
+.orbit-stage {
+  position: absolute;
+  inset: 3%;
+  animation: orbit-spin 20s linear infinite;
+  transform-origin: center;
+}
+.orbit-stage:hover { animation-play-state: paused; }
+.home-main-visual {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  user-select: none;
+  transform: scale(1.4);
+}
+.orbit-wire {
+  position: absolute;
+  height: clamp(0.25rem, 0.4vw, 0.48rem);
+  border-radius: 999px;
+  transform-origin: left center;
+}
+.wire-coral { left: 20%; top: 14%; width: 34%; transform: rotate(-7deg); background: #e79472; }
+.wire-sage { left: 64%; top: 15%; width: 29%; transform: rotate(18deg); background: #80b486; }
+.wire-rose { left: 71%; top: 59%; width: 22%; transform: rotate(106deg); background: #cd7186; }
+.wire-blue { left: 28%; top: 82%; width: 34%; transform: rotate(4deg); background: #4f88b5; }
+.orbit-node {
+  position: absolute;
+  width: clamp(1.05rem, 1.8vw, 1.8rem);
+  aspect-ratio: 1;
+  border-radius: 50%;
+}
+.node-coral { left: 39%; top: 11%; background: #e79472; }
+.node-sage { left: 63%; top: 12%; background: #80b486; }
+.node-rose { left: 78%; top: 52%; background: #cd7186; }
+.node-blue { left: 29%; top: 79%; background: #4f88b5; }
+.orbit-person {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  color: #050505;
+}
+.person-coral { left: 20%; top: 14%; width: 31%; height: 34%; border-radius: 34% 30% 33% 38% / 32% 29% 41% 36%; background: #e79472; }
+.person-sage { right: 10%; top: 9%; width: 34%; height: 34%; border-radius: 52% 46% 48% 41% / 44% 44% 53% 46%; background: #80b486; }
+.person-rose { right: 3%; bottom: 15%; width: 32%; height: 31%; border-radius: 50%; background: #cd7186; }
+.person-blue { left: 15%; bottom: 4%; width: 35%; height: 31%; clip-path: polygon(50% 0%, 74% 24%, 100% 73%, 77% 93%, 54% 63%, 23% 100%, 0 69%, 25% 38%); background: #4f88b5; }
+.person-eye { position: absolute; top: 34%; width: clamp(.65rem, 1.1vw, 1.1rem); aspect-ratio: 1; border-radius: 50%; background: #050505; }
+.person-eye-a { left: 38%; }
+.person-eye-b { right: 29%; }
+.person-mouth-open { width: 18%; height: 25%; border-radius: 50%; background: #050505; }
+.person-mouth-smile { width: 36%; height: 25%; border-bottom: clamp(2px, .25vw, 4px) solid #050505; border-radius: 0 0 50% 50%; }
+.home-input-wrap {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  width: min(68vw, 58rem);
+  min-height: clamp(3.8rem, 5.5vw, 5.5rem);
+  margin-top: 140px;
+  border: 2px solid #050505;
+  border-radius: 999px;
+  background: #fffef5;
+  padding: .65rem .9rem .65rem clamp(1.5rem, 2.5vw, 3rem);
+}
+.home-input {
+  min-width: 0;
+  flex: 1;
+  resize: none;
+  background: transparent;
+  color: #050505;
+  font-size: clamp(1rem, 1.35vw, 1.45rem);
+  line-height: 1.3;
+  outline: none;
+}
+.home-input::placeholder { color: #9ca3af; opacity: 1; }
+.home-send {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: .7rem;
+  border-radius: 999px;
+  background: #1d1d1d;
+  color: #fffef5;
+  padding: clamp(.75rem, 1vw, 1rem) clamp(1.1rem, 1.5vw, 1.6rem);
+  font-size: clamp(1rem, 1.2vw, 1.35rem);
+  font-weight: 600;
+  transition: opacity .2s, transform .2s;
+}
+.home-send:hover:not(:disabled) { transform: translateY(-2px); }
+.home-send:disabled { cursor: not-allowed; opacity: .45; }
+.home-examples { margin-top: clamp(1.2rem, 2.4vh, 2.5rem); display: flex; flex-direction: column; align-items: center; font-size: clamp(.95rem, 1.2vw, 1.25rem); }
+.home-example-list { display: grid; grid-template-columns: repeat(3, auto); justify-content: center; gap: 1.2rem; margin-top: clamp(.9rem, 1.5vh, 1.5rem); }
+.home-example { border-radius: 999px; color: #fffef5; padding: .55rem clamp(1rem, 1.5vw, 1.5rem);
+  font-size: clamp(.85rem, 1vw, 1.05rem); transition: transform .2s, filter .2s; }
+.home-example:hover { transform: translateY(-2px); filter: brightness(.95); }
+.example-0 { background: #cd7186; }
+.example-1 { background: #80b486; }
+.example-2 { background: #4f88b5; }
+@media (max-width: 700px) {
+  .home-visual { width: min(110vw, 34rem); margin-top: 2rem; }
+  .home-input-wrap { width: 100%; min-height: 4.5rem; padding-left: 1.2rem; }
+  .home-send { padding: .9rem 1.1rem; }
+  .home-example-list { flex-wrap: wrap; gap: .7rem; }
+  .home-example { padding: .6rem .9rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .orbit-stage { animation: none; }
+}
+
+/* 预测页：低饱和色块配细线框，保留黑色点击/完成状态。 */
+.prediction-answer {
+  background: transparent;
+  border: 1px solid #d8d0c4;
+  border-radius: 1.5rem;
+}
+.prediction-heading { color: #514b45; }
+.prediction-note {
+  border-radius: 999px;
+  background: #eed5dd;
+  color: #746b68;
+}
+.prediction-button {
+  background: #1d1d1d !important;
+  color: #fffef5 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.predicting-progress [aria-current='step'] {
+  border-color: #1d1d1d;
+  background: #c97886;
+  color: #1d1d1d;
+}
+.predicting-progress li:nth-child(-n + 3) span[aria-current='step'],
+.predicting-progress li:nth-child(-n + 3) > div > span {
+  background: #bcb7ad;
+  border-color: #bcb7ad;
+  color: #514b45;
+}
+.predicting-progress li:nth-child(4) span[aria-current='step'] {
+  background: #c97886;
+  border-color: #1d1d1d;
+  color: #1d1d1d;
+}
+.predicting-progress li > span { background: #d5d0c7; }
+.predicting-progress li:nth-child(-n + 4) > span { background: #bcb7ad; }
+
+/* 首页之后四个阶段统一规范：低饱和色块、无阴影、无黑色装饰层。 */
+.organizing-progress [aria-current='step'],
+.fragments-progress [aria-current='step'],
+.predicting-progress [aria-current='step'],
+.review-progress [aria-current='step'] {
+  border-color: #1d1d1d !important;
+  background: #c97886 !important;
+  color: #1d1d1d !important;
+}
+.organizing-progress li > div > span:not([aria-current='step']),
+.fragments-progress li > div > span:not([aria-current='step']),
+.predicting-progress li > div > span:not([aria-current='step']),
+.review-progress li > div > span:not([aria-current='step']) {
+  border-color: #bcb7ad !important;
+  background: #bcb7ad !important;
+  color: #514b45 !important;
+}
+.organizing-progress li > span,
+.fragments-progress li > span,
+.predicting-progress li > span,
+.review-progress li > span {
+  background: #bcb7ad !important;
+}
+.organizing-progress li:last-child > div > span,
+.fragments-progress li:last-child > div > span,
+.predicting-progress li:last-child > div > span,
+.review-progress li:last-child > div > span {
+  background: #d5d0c7 !important;
+}
+
+
+.organizing-stage,
+.fragments-stage,
+.flat-stage,
+.review-thing {
+  --stage-coral: #d99578;
+  --stage-rose: #c97886;
+  --stage-sage: #83ab86;
+  --stage-blue: #628eae;
+  --stage-paper: #fffef5;
+}
+.organizing-stage .sticker,
+.fragments-stage .sticker,
+.flat-stage .sticker,
+.review-thing .sticker {
+  filter: none !important;
+}
+.organizing-stage .sticker__edge,
+.organizing-stage .sticker__ink,
+.fragments-stage .sticker__edge,
+.fragments-stage .sticker__ink,
+.flat-stage .sticker__edge,
+.flat-stage .sticker__ink,
+.review-thing .sticker__edge,
+.review-thing .sticker__ink {
+  background: transparent !important;
+  transform: none !important;
+}
+.organizing-stage .sticker__fill,
+.fragments-stage .sticker__fill,
+.flat-stage .sticker__fill,
+.review-thing .sticker__fill {
+  transform: none !important;
+}
+.organizing-stage .sticker__content,
+.fragments-stage .sticker__content,
+.flat-stage .sticker__content,
+.review-thing .sticker__content {
+  color: var(--ink);
+}
+.flat-stage .prediction-answer,
+.flat-stage .prediction-card,
+.flat-stage .confidence-bar,
+.review-thing,
+.review-thing + * {
+  box-shadow: none !important;
+}
+.flat-stage .prediction-button,
+.fragments-stage .btn-retro,
+.review-button {
+  background: #1d1d1d !important;
+  color: #fffef5 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+.organizing-stage .organizing-mark {
+  border: 0;
+  box-shadow: none;
+}
+.review-note {
+  background: #f0dfae !important;
+  color: #746b68 !important;
+  font-weight: 400 !important;
+}
+.review-thing > .sticker { margin-bottom: .25rem; }
+
+/* 碎片页：只保留圆润的低饱和纯色块，点击后回到黑色状态。 */
+.fragment-chip {
+  display: flex;
+  min-width: 8.2rem;
+  min-height: 7.6rem;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: .25rem;
+  border: 0;
+  color: var(--ink);
+  background: var(--chip-color);
+  transform: rotate(var(--chip-rotate));
+  transition: transform .25s ease, background-color .2s ease;
+}
+.fragment-chip:hover { transform: rotate(var(--chip-rotate)) translateY(-3px); }
+.fragment-chip.is-revealed {
+  background: #1d1d1d;
+  color: #fffef5;
+  border: 2px solid #1d1d1d;
+  transform: rotate(0deg);
+}
+.fragment-chip-petal { border-radius: 42% 58% 48% 52% / 58% 42% 58% 42%; }
+.fragment-chip-blob { border-radius: 53% 47% 62% 38% / 42% 58% 42% 58%; }
+.fragment-chip-round { border-radius: 48% 52% 46% 54% / 54% 44% 56% 46%; }
+.fragment-chip-soft { border-radius: 32% 68% 43% 57% / 56% 44% 62% 38%; }
+.fragment-chip-text { font-size: clamp(1.1rem, 1.8vw, 1.45rem); font-weight: 700; }
+.fragment-chip-token { font-family: var(--font-mono); font-size: 1.15rem; font-weight: 700; line-height: 1; }
+.fragment-chip-caption { font-size: .7rem; font-weight: 600; opacity: .62; }
+.fragment-chip.is-revealed .fragment-chip-caption { opacity: .72; }
+.fragments-stage .btn-retro {
+  background: #1d1d1d !important;
+  color: #fffef5 !important;
+  border: 0;
+  box-shadow: none;
+}
+
+.review-answer {
+  border: 1px solid #d7cfc3;
+  background: var(--paper);
+  box-shadow: none;
+}
+.review-answer p:last-child {
+  font-size: 1.125rem;
+  line-height: 1.625;
+}
+.review-things > .review-thing {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.review-things > .review-thing .sticker {
+  margin-bottom: .25rem;
+}
+.review-things > .review-thing p:first-of-type {
+  color: var(--foreground);
+}
+
+/* 截图对应的最终规范：步骤未经过时仅描边，经过后才填充。 */
+.organizing-progress li > div > span:not([aria-current='step']),
+.fragments-progress li > div > span:not([aria-current='step']),
+.predicting-progress li > div > span:not([aria-current='step']),
+.review-progress li > div > span:not([aria-current='step']) {
+  background: transparent !important;
+  border-color: #bcb7ad !important;
+  color: #746b68 !important;
+}
+.organizing-progress li > span,
+.fragments-progress li > span,
+.predicting-progress li > span,
+.review-progress li > span {
+  background: #d5d0c7 !important;
+}
+.organizing-progress li:nth-child(-n + 2) > div > span,
+.fragments-progress li:nth-child(-n + 3) > div > span,
+.predicting-progress li:nth-child(-n + 4) > div > span,
+.review-progress li > div > span {
+  background: #bcb7ad !important;
+  border-color: #bcb7ad !important;
+}
+.organizing-progress li:nth-child(2) > span,
+.fragments-progress li:nth-child(3) > span,
+.predicting-progress li:nth-child(4) > span,
+.review-progress li:nth-child(5) > span {
+  background: #bcb7ad !important;
+}
+.organizing-keyword {
+  display: grid;
+  min-width: 9rem;
+  min-height: 5.5rem;
+  place-items: center;
+  padding: 1rem 1.5rem;
+  color: #514b45;
+  background: #d99578;
+}
+.organizing-keyword-0 { border-radius: 45% 55% 48% 52% / 52% 44% 56% 48%; }
+.organizing-keyword-1 { border-radius: 48% 52% 42% 58% / 58% 45% 55% 42%; background: #c97886; }
+.organizing-keyword-2 { border-radius: 36% 64% 50% 50% / 48% 52% 45% 55%; background: #628eae; }
+.organizing-keyword-3 { border-radius: 52% 48% 58% 42% / 44% 56% 48% 52%; background: #83ab86; }
+.organizing-keyword:nth-child(5) { background: #b7a6b9; }
+.organizing-progress li > div > span:nth-child(2),
+.fragments-progress li > div > span:nth-child(2),
+.predicting-progress li > div > span:nth-child(2),
+.review-progress li > div > span:nth-child(2) {
+  background: transparent !important;
+  border: 0 !important;
+  color: #746b68 !important;
+}
+.organizing-progress li > div > span:first-child,
+.fragments-progress li > div > span:first-child,
+.predicting-progress li > div > span:first-child,
+.review-progress li > div > span:first-child {
+  border: 2px solid #bcb7ad;
+  background: transparent;
+  color: #746b68;
+}
+.organizing-progress [aria-current='step'],
+.fragments-progress [aria-current='step'],
+.predicting-progress [aria-current='step'],
+.review-progress [aria-current='step'] {
+  border: 2px solid #1d1d1d !important;
+  background: #c97886 !important;
+  color: #1d1d1d !important;
+}
+.organizing-progress li > div > span:last-child,
+.fragments-progress li > div > span:last-child,
+.predicting-progress li > div > span:last-child,
+.review-progress li > div > span:last-child {
+  border: 0 !important;
+  background: transparent !important;
+  color: #746b68 !important;
+}
+.organizing-progress li > div > span[aria-current='step'] ~ span,
+.fragments-progress li > div > span[aria-current='step'] ~ span,
+.predicting-progress li > div > span[aria-current='step'] ~ span,
+.review-progress li > div > span[aria-current='step'] ~ span {
+  color: #514b45 !important;
+}
+.organizing-progress li:nth-child(-n + 2) > div > span:first-child,
+.fragments-progress li:nth-child(-n + 3) > div > span:first-child,
+.predicting-progress li:nth-child(-n + 4) > div > span:first-child,
+.review-progress li > div > span:first-child {
+  border-color: #bcb7ad;
+  background: #bcb7ad;
+  color: #514b45;
+}
+
+.prediction-card { border: 1px solid #c9c1b6 !important; box-shadow: none !important; }
+.prediction-card-idle { background: transparent !important; }
+
+/* 后续页面统一为主页标准：只有低饱和色块，不使用黑色描边或阴影。 */
+.flat-stage .sticker {
+  filter: none;
+}
+.flat-stage .sticker__edge,
+.flat-stage .sticker__ink {
+  background: transparent !important;
+  transform: none;
+}
+.flat-stage .sticker__fill {
+  transform: none;
+}
+.flat-stage .sticker:nth-child(4n + 1) .sticker__fill { background: #d99578 !important; }
+.flat-stage .sticker:nth-child(4n + 2) .sticker__fill { background: #c97886 !important; }
+.flat-stage .sticker:nth-child(4n + 3) .sticker__fill { background: #628eae !important; }
+.flat-stage .sticker:nth-child(4n) .sticker__fill { background: #83ab86 !important; }
+.flat-note {
+  color: #8a8176;
+}
+.flat-note .font-semibold {
+  color: #514b45;
+}
+.flat-stage .card-sticker,
+.flat-stage .mind-frame {
+  border: 0;
+  box-shadow: none;
+  background: transparent;
+}
+.flat-stage .btn-retro {
+  border: 0;
+  box-shadow: none;
+  background: #83ab86;
+}
+
+/* 第二页 organizing：无卡片外框，关键词像轻量贴纸散落在画面中。 */
+.organizing-stage {
+  min-height: min(78dvh, 42rem);
+}
+.organizing-mark {
+  display: grid;
+  place-items: center;
+  width: 2.7rem;
+  aspect-ratio: 1;
+  border: 0;
+  border-radius: 42% 58% 55% 45% / 52% 44% 56% 48%;
+  background: #d99578;
+  color: var(--ink);
+  transform: rotate(-7deg);
+  box-shadow: none;
+}
+.organizing-keywords {
+  display: flex;
+  max-width: 42rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: clamp(1.25rem, 3vw, 2.6rem);
+  margin-top: clamp(2.5rem, 7vh, 5rem);
+}
+.organizing-keyword {
+  font-size: clamp(.95rem, 1.5vw, 1.25rem);
+  filter: none;
+}
+.organizing-keyword .sticker__edge,
+.organizing-keyword .sticker__ink {
+  background: transparent !important;
+  transform: none;
+}
+.organizing-keyword .sticker__fill {
+  transform: none;
+}
+/* 覆盖通用 pop 色，仅在第二页使用 PNG 中的低饱和色。 */
+.organizing-keyword:nth-child(1) { --organizing-fill: #d99578; }
+.organizing-keyword:nth-child(2) { --organizing-fill: #c97886; }
+.organizing-keyword:nth-child(3) { --organizing-fill: #628eae; }
+.organizing-keyword:nth-child(4) { --organizing-fill: #83ab86; }
+.organizing-keyword:nth-child(5) { --organizing-fill: #9a8fa8; }
+.organizing-progress [aria-current='step'] {
+  border: 0;
+  background: #c97886;
+  color: var(--ink);
+}
+.organizing-progress span:not([aria-current='step']) {
+  border-color: transparent;
+}
+.organizing-progress li > span {
+  background: #d7cfc1;
+}
+.organizing-progress li > div > span:not([aria-current='step']) {
+  color: #8a8176;
+}
+/* 当前步骤始终使用主页配色，避免旧规则覆盖。 */
+.organizing-progress [aria-current='step'],
+.fragments-progress [aria-current='step'],
+.predicting-progress [aria-current='step'],
+.review-progress [aria-current='step'] {
+  border: 2px solid #1d1d1d !important;
+  background: #c97886 !important;
+  color: #1d1d1d !important;
+}
+.organizing-progress li > div > span:last-child,
+.fragments-progress li > div > span:last-child,
+.predicting-progress li > div > span:last-child,
+.review-progress li > div > span:last-child {
+  background: transparent !important;
+  border: 0 !important;
+}
+.organizing-keyword .sticker__fill {
+  background: var(--organizing-fill) !important;
+}
+.organizing-keyword .sticker__edge,
+.organizing-keyword .sticker__ink {
+  background: transparent !important;
+  box-shadow: none;
+}
+.organizing-keyword:nth-child(2) { --blob-dur: 6.4s; }
+.organizing-keyword:nth-child(3) { --blob-dur: 7.2s; }
+.organizing-keyword:nth-child(4) { --blob-dur: 6.8s; }
+.organizing-keyword:nth-child(5) { --blob-dur: 7.6s; }

@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>llm-lab 生成流程逻辑图 · 模型对比可切换</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --panel-2: #1c2128;
+    --border: #30363d;
+    --text: #e6edf3;
+    --muted: #8b949e;
+    --real: #3fb950;      /* 真实数据 */
+    --explain: #bc8cff;   /* 机制解释 */
+    --nogo: #f85149;      /* 不可获取 */
+    --accent: #58a6ff;
+    --warn: #d29922;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    padding: 32px 20px 60px; line-height: 1.5;
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; }
+
+  /* ---------- header ---------- */
+  header { margin-bottom: 20px; }
+  h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 6px; }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 14px; }
+  .tab {
+    padding: 8px 16px; border-radius: 20px; cursor: pointer;
+    background: var(--panel); border: 1px solid var(--border);
+    color: var(--muted); font-size: 13px; user-select: none;
+    transition: all .15s;
+  }
+  .tab small { display: block; font-size: 11px; opacity: .8; margin-top: 1px; }
+  .tab:hover { border-color: var(--accent); color: var(--text); }
+  .tab.active { background: var(--accent); border-color: var(--accent); color: #0d1117; font-weight: 700; }
+  .tab.active small { color: rgba(13,17,23,.75); }
+
+  .legend { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: 12.5px; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); }
+  .dot { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+  .dot.real { background: var(--real); }
+  .dot.explain { background: var(--explain); }
+  .dot.nogo { background: var(--nogo); }
+  .dot.neutral { background: var(--muted); }
+  .dot.generic { background: var(--warn); }
+
+  .note-bar {
+    background: var(--panel-2); border: 1px solid var(--border); border-left: 3px solid var(--warn);
+    border-radius: 8px; padding: 10px 14px; font-size: 12.5px; color: var(--text); margin-bottom: 18px;
+  }
+  .note-bar b { color: var(--warn); }
+
+  /* ---------- layout ---------- */
+  .cols { display: flex; gap: 24px; align-items: flex-start; }
+  .flow { flex: 1; min-width: 0; }
+  .side { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 18px; position: sticky; top: 20px; }
+
+  @media (max-width: 980px) {
+    .cols { flex-direction: column; }
+    .side { width: 100%; position: static; }
+  }
+
+  /* ---------- flow nodes ---------- */
+  .node {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 16px; position: relative;
+  }
+  .node .no {
+    position: absolute; left: -10px; top: -10px;
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--accent); color: #0d1117;
+    font-weight: 800; font-size: 13px;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid var(--bg);
+  }
+  .node .title { font-weight: 700; font-size: 14.5px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .node .title code {
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 5px; font-size: 11.5px; color: var(--accent);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  .node .desc { color: var(--muted); font-size: 12.5px; margin-top: 5px; }
+  .badge {
+    display: inline-block; font-size: 10.5px; font-weight: 700; letter-spacing: .5px;
+    padding: 1px 7px; border-radius: 4px; border: 1px solid;
+  }
+  .badge.generic { color: var(--warn); border-color: var(--warn); }
+  .badge.mutable { color: var(--muted); border-color: var(--border); }
+
+  .arrow { text-align: center; color: var(--muted); font-size: 13px; padding: 3px 0; user-select: none; }
+  .arrow .glyph { display: block; color: var(--border); font-size: 15px; line-height: 1; }
+  .arrow .label { font-size: 11px; color: var(--muted); }
+
+  /* ---------- black box ---------- */
+  .blackbox {
+    border: 2px dashed var(--nogo); border-radius: 10px;
+    padding: 12px 16px; background: rgba(248, 81, 73, 0.05);
+  }
+  .blackbox .tag {
+    display: inline-block; color: var(--nogo); font-weight: 800; font-size: 12px;
+    border: 1px solid var(--nogo); border-radius: 4px; padding: 1px 8px;
+    margin-bottom: 8px; letter-spacing: 1px;
+  }
+  .blackbox .title { font-weight: 700; font-size: 14.5px; }
+  .blackbox .desc { color: var(--muted); font-size: 12.5px; margin-top: 4px; }
+  .blackbox ul { margin-top: 10px; list-style: none; font-size: 12.5px; color: var(--nogo); }
+  .blackbox ul li { padding: 3px 0; }
+  .blackbox .summary {
+    margin-top: 10px; border-top: 1px dashed rgba(248,81,73,.4);
+    padding-top: 8px; font-size: 12.5px; color: var(--text);
+  }
+  .thinking {
+    margin-top: 10px; border: 1px solid var(--explain); border-radius: 8px;
+    background: rgba(188,140,255,.06); padding: 8px 12px; font-size: 12.5px; color: var(--text);
+  }
+  .thinking b { color: var(--explain); }
+
+  /* ---------- data labels ---------- */
+  .gets { margin-top: 9px; font-size: 12px; }
+  .gets .ok { color: var(--real); }
+  .gets .no { color: var(--nogo); }
+  .gets .part { color: var(--warn); }
+  .gets b { font-weight: 700; }
+  .gets .inner { color: var(--muted); }
+
+  /* ---------- loop bar ---------- */
+  .loopbar {
+    margin: 0 16px; padding: 8px 12px; border-radius: 8px;
+    background: var(--panel-2); border: 1px dashed var(--accent);
+    font-size: 12.5px; color: var(--accent); text-align: center;
+  }
+
+  /* ---------- step grid ---------- */
+  .steps { display: flex; flex-direction: column; gap: 0; }
+  .step {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 11px 14px; background: var(--panel); border-left: 3px solid var(--border);
+    border-radius: 0 8px 8px 0;
+  }
+  .step .idx {
+    flex-shrink: 0; width: 30px; height: 30px; border-radius: 8px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12.5px; font-weight: 700; color: var(--accent);
+  }
+  .step .body { flex: 1; min-width: 0; }
+  .step .name { font-weight: 700; font-size: 13.5px; }
+  .step .name code {
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 5px; font-size: 11px; color: var(--accent);
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; margin-left: 6px;
+  }
+  .step .detail { font-size: 12px; color: var(--muted); margin-top: 3px; }
+
+  /* ---------- side cards ---------- */
+  .card { border-radius: 10px; padding: 14px 16px; }
+  .card h3 { font-size: 13.5px; display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .card ul { list-style: none; }
+  .card li { font-size: 12.5px; padding: 5px 0; border-bottom: 1px solid rgba(48,54,61,.5); }
+  .card li:last-child { border-bottom: none; }
+  .card li b { display: block; font-weight: 700; }
+  .card li .detail { color: var(--muted); font-size: 11.5px; }
+  .card.ok { background: rgba(63,185,80,.06); border: 1px solid rgba(63,185,80,.4); }
+  .card.ok h3 { color: var(--real); }
+  .card.no { background: rgba(248,81,73,.06); border: 1px solid rgba(248,81,73,.4); }
+  .card.no h3 { color: var(--nogo); }
+  .card.viewname { text-align: center; font-size: 12px; color: var(--accent); background: var(--panel-2); border: 1px dashed var(--accent); border-radius: 8px; padding: 6px; }
+  .card.summary { background: var(--panel-2); border: 1px solid var(--border); }
+  .card.summary h3 { color: var(--explain); }
+  .card.summary p { font-size: 12.5px; color: var(--muted); margin-bottom: 6px; }
+
+  footer { margin-top: 28px; font-size: 11.5px; color: var(--muted); border-top: 1px solid var(--border); padding-top: 12px; }
+  footer code { color: var(--accent); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+
+  /* ---------- view switching ---------- */
+  .flow[data-view="local"] .vv-vllm,
+  .flow[data-view="local"] .vv-api,
+  .flow[data-view="vllm"]  .vv-local,
+  .flow[data-view="vllm"]  .vv-api,
+  .flow[data-view="api"]   .vv-local,
+  .flow[data-view="api"]   .vv-vllm,
+  .side[data-view="local"] .vv-vllm,
+  .side[data-view="local"] .vv-api,
+  .side[data-view="vllm"]  .vv-local,
+  .side[data-view="vllm"]  .vv-api,
+  .side[data-view="api"]   .vv-local,
+  .side[data-view="api"]   .vv-vllm { display: none; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>llm-lab · 生成流程逻辑图(模型对比 · 可切换)</h1>
+    <div class="sub">架构主轴对所有主流大模型相同;可切换的是"能拿到什么 / 拿不到什么 / 有没有思考阶段"。目的:避免"所有大模型都一样"的误解。</div>
+
+    <div class="tabs">
+      <div class="tab active" data-view="local">① 本地开源 · Qwen2.5-0.5B<small>当前项目 · 手写生成循环</small></div>
+      <div class="tab" data-view="vllm">② 云端托管开源 · vLLM/TGI<small>技术方案 §12 备用方案</small></div>
+      <div class="tab" data-view="api">③ 闭源 API · OpenAI/DeepSeek/Claude<small>可能含 reasoning 模型</small></div>
+    </div>
+
+    <div class="legend">
+      <span><i class="dot generic"></i>所有模型通用(不随切换变化)</span>
+      <span><i class="dot real"></i>真实数据 · 可获取(红线 A)</span>
+      <span><i class="dot explain"></i>机制解释(红线 B)</span>
+      <span><i class="dot nogo"></i>模型内部 · 不可获取(红线 C)</span>
+    </div>
+  </header>
+
+  <div class="note-bar">
+    <b>先看结论:</b>主干 <b>1 → 7</b> 对所有 transformer 大模型都一样(都是"逐 token 自回归")。真正不同、也是本图可切换的,只有三点:
+    ① <b>部署方式</b>决定你能读到什么接口(logits / logprobs / 仅文本);
+    ② <b>模型类型</b>决定有没有"思考阶段"(reasoning 模型有,普通模型没有);
+    ③ <b>提供商</b>决定思考文本是否可见。橙色边框 = 通用部分,侧栏与数据标签随视图切换。
+  </div>
+
+  <div class="cols">
+
+    <!-- ==================== 主流程 ==================== -->
+    <div class="flow" data-view="local">
+
+      <div class="node">
+        <span class="no">1</span>
+        <div class="title">用户输入文本 <code>GET /api/stream?text=...</code> <span class="badge generic">通用</span></div>
+        <div class="desc">提交 ≤100 中文字;前后端双重长度校验。任何模型都从这里开始。</div>
+        <div class="gets"><span class="ok">✔ 拿得到:</span> <b>输入文本</b></div>
+      </div>
+      <div class="arrow"><span class="glyph">▼</span></div>
+
+      <div class="node">
+        <span class="no">2</span>
+        <div class="title">校验 + 会话管理 <code>sessions[conversation_id]</code> <span class="badge generic">通用</span></div>
+        <div class="desc">新会话分配 id;超过 MAX_TURNS=3 轮裁剪最旧对话。与应用相关,与模型无关。</div>
+        <div class="gets"><span class="ok">✔ 拿得到:</span> <b>对话历史</b> · <b>轮数</b> · <b>上下文 token 数</b></div>
+      </div>
+      <div class="arrow"><span class="glyph">▼</span><span class="label">build_prompt → tokenizer.apply_chat_template</span></div>
+
+      <div class="node">
+        <span class="no">3</span>
+        <div class="title">Tokenization(带 chat 模板) <code>generator.py:32-36</code> <span class="badge generic">通用</span></div>
+        <div class="desc">文本 → token id 序列,含系统标记 &lt;|im_start|&gt; / &lt;|im_end|&gt;。所有模型都做 tokenize,但<b>词表与切分规则各模型不同</b>("为什么"在 Qwen 是 1 个 token,别的模型可能拆成 2 个)。</div>
+        <div class="gets"><span class="ok">✔ 拿得到:</span> <b>Token 文本/ID/位置/数量</b></div>
+      </div>
+      <div class="arrow"><span class="glyph">▼</span></div>
+
+      <!-- ============ 生成循环 ============ -->
+      <div class="steps">
+        <div class="step">
+          <div class="idx">4.1</div>
+          <div class="body">
+            <div class="blackbox">
+              <span class="tag">黑盒 · 不可获取(所有模型)</span>
+              <div class="title">前向传播 <code>model(input, past_key_values)</code> <span class="badge generic">通用</span></div>
+
+              <div class="desc vv-local">输入最后 1 个 token + KV cache,一次 forward:embedding → 自注意力 → 前馈 → 输出。本机进程内直接读 logits(generator.py:63-75)。</div>
+              <div class="desc vv-vllm">推理发生在<b>远程服务器</b>;模型与生成循环由 vLLM/TGI 托管,你只能通过其 HTTP 接口取结果,进程内的一切不可见。</div>
+              <div class="desc vv-api">完全远程黑盒;没有任何内部状态访问通道。若调用的是 reasoning 模型,可能额外返回一段思考文本(见下)。</div>
+
+              <div class="thinking vv-api">
+                <b>思考阶段(仅 reasoning 模型存在):</b>o1 / DeepSeek-R1 / Gemini Thinking 等会先生成一段 reasoning tokens 再作答。
+                可见性由提供商决定:<b>DeepSeek</b> 返回 <code>reasoning_content</code> 全文 · <b>OpenAI</b> 默认只给摘要 · <b>Anthropic</b> 需显式开启 thinking。
+                注意:即使看到思考全文,它仍是<b>模型"说出口"的文本,不是内部算法</b>——红线 C 仍然成立。
+              </div>
+              <div class="thinking vv-vllm">
+                <b>思考阶段:</b>取决于部署的模型。若在 vLLM 上跑 reasoning 模型(如 QwQ / R1 蒸馏版),
+                思考 tokens 与作答同流输出,<b>自托管 = 全文可见</b>。但同左:那是输出文本,不是内部状态。
+              </div>
+              <div class="thinking vv-local">
+                <b>思考阶段:无。</b>Qwen2.5-0.5B-Instruct 是非 reasoning 模型——没有隐藏 thinking channel,
+                每步 forward 就是全部。"它不在思考,只是在算下一个词的概率"。
+              </div>
+
+              <ul class="vv-local">
+                <li>✖ 模型"为什么"这样打分(因果归因)</li>
+                <li>✖ 主观意图 / 想法 / "决定" / 情绪理解</li>
+                <li>✖ 注意力权重 ≠ "它真正关注什么"(语义归因)</li>
+              </ul>
+              <ul class="vv-vllm">
+                <li>✖ 注意力矩阵 / 隐藏层 / KV cache(服务端内部)</li>
+                <li>✖ 全词表 logits(仅 logprobs 出口,见 4.2)</li>
+                <li>✖ 因果归因 / 意图 / 思维链</li>
+              </ul>
+              <ul class="vv-api">
+                <li>✖ 全词表 logits / 完整分布 / 任何内部状态</li>
+                <li>✖ 因果归因 / 意图 / 真实内部思考(思考文本≠内部算法)</li>
+                <li>✖ 注意力 / 隐藏层 / 缓存</li>
+              </ul>
+
+              <div class="summary">概括:以上属于<b>模型内部算法与训练结果的一部分</b>,任何可视化都不能声称展示它们(红线 C)——这一点三种部署方式<b>完全一致</b>。</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="arrow"><span class="glyph">▼</span></div>
+
+        <div class="step">
+          <div class="idx">4.2</div>
+          <div class="body">
+            <div class="name">Logits(全词表)<code>out.logits[0,-1]</code> <span class="badge mutable">随部署变化</span></div>
+            <div class="detail vv-local">黑盒唯一出口:全词表(约 15 万维)原始分数,进程内直接读(generator.py:74)。</div>
+            <div class="detail vv-vllm">vLLM/TGI 提供 <code>logprobs</code> 参数,但只返回 <b>top-k 候选</b>的概率(如 top-5),拿不到全词表。</div>
+            <div class="detail vv-api">OpenAI 兼容接口可选 <code>top_logprobs</code>(≤20 个);Anthropic 不提供 logprobs。全词表不可能。</div>
+            <div class="gets vv-local"><span class="ok">✔ 拿得到:</span> <b>任意 token 的 logit 值</b>(全量)</div>
+            <div class="gets vv-vllm"><span class="part">△ 部分拿得到:</span> <b>top-k 候选的 logprob</b>,无全量</div>
+            <div class="gets vv-api"><span class="no">✖ 基本拿不到:</span> 仅少数 API 可选 top-logprobs</div>
+          </div>
+        </div>
+
+        <div class="arrow"><span class="glyph">▼</span><span class="label">softmax(logits / temperature)</span></div>
+
+        <div class="step">
+          <div class="idx">4.3</div>
+          <div class="body">
+            <div class="name">全概率分布<code>torch.softmax</code> <span class="badge mutable">随部署变化</span></div>
+            <div class="detail vv-local">所有候选的精确概率,概率和为 1(generator.py:77-78);可再算熵 / top1 / top5 和(不确定度)。</div>
+            <div class="detail vv-vllm">只能从返回的 top-k 概率还原局部;全分布与熵不可算。</div>
+            <div class="detail vv-api">仅可选的 top-logprobs 局部概率;无全分布、无熵。</div>
+            <div class="gets vv-local"><span class="ok">✔ 拿得到:</span> <b>完整分布</b> · <b>熵 / top1 / top5 和</b>(零成本可算)</div>
+            <div class="gets vv-vllm"><span class="part">△ 部分拿得到:</span> 仅 top-k 局部</div>
+            <div class="gets vv-api"><span class="no">✖ 不可拿:</span> 无完整分布</div>
+          </div>
+        </div>
+
+        <div class="arrow"><span class="glyph">▼</span><span class="label">torch.topk(probs, 5)</span></div>
+
+        <div class="step">
+          <div class="idx">4.4</div>
+          <div class="body">
+            <div class="name">Top-5 候选<code>torch.topk</code> <span class="badge generic">三种部署都有(级别不同)</span></div>
+            <div class="detail vv-local">概率最高的 5 个,本地直取(generator.py:81-82)。</div>
+            <div class="detail vv-vllm">由 <code>logprobs</code> 参数提供,与本地等价。</div>
+            <div class="detail vv-api">OpenAI 兼容系可选(≤20);Anthropic 无——<b>Top-5 可视化依赖具体 API 能力</b>。</div>
+            <div class="gets vv-local"><span class="ok">✔ 拿得到:</span> <b>候选 + 概率 + 名次</b>(已推送 step 事件)</div>
+            <div class="gets vv-vllm"><span class="ok">✔ 拿得到:</span> <b>候选 + 概率 + 名次</b>(经 logprobs)</div>
+            <div class="gets vv-api"><span class="part">△ 依 API:</span> OpenAI 系可选 · Anthropic 无</div>
+          </div>
+        </div>
+
+        <div class="arrow"><span class="glyph">▼</span><span class="label">top_p 截断 + torch.multinomial</span></div>
+
+        <div class="step">
+          <div class="idx">4.5</div>
+          <div class="body">
+            <div class="name">采样选中<code>multinomial</code> <span class="badge mutable">随部署变化</span></div>
+            <div class="detail vv-local">按概率"抽签",可能选到非第一名甚至不在 Top-5 内(generator.py:84-94);参数本地可控(temperature=0.8, top_p=0.9)。</div>
+            <div class="detail vv-vllm">采样在服务端执行;temperature / top_p 等参数可在请求中设置。</div>
+            <div class="detail vv-api">采样在服务端;参数受 API 限制,部分平台不支持自定义 seed。</div>
+            <div class="gets vv-local"><span class="ok">✔ 拿得到:</span> <b>选中 token + 精确概率</b>(含 rank=null 情形)</div>
+            <div class="gets vv-vllm"><span class="part">△ 部分拿得到:</span> 选中 token 可见,精确概率受 logprobs 覆盖限制</div>
+            <div class="gets vv-api"><span class="part">△ 部分拿得到:</span> 选中文本可见,概率通常不可见</div>
+          </div>
+        </div>
+
+        <div class="arrow"><span class="glyph">▼</span><span class="label">拼接 + KV cache 更新</span></div>
+
+        <div class="step">
+          <div class="idx">4.6</div>
+          <div class="body">
+            <div class="name">序列增长<code>seq.append(chosen_id)</code> <span class="badge generic">通用机制</span></div>
+            <div class="detail vv-local">选中 token 加入序列;KV cache 缓存注意力结果,下一步只算新 token(generator.py:96-97)。</div>
+            <div class="detail vv-vllm">KV cache 在服务端,不可见;输出序列流式返回。</div>
+            <div class="detail vv-api">输出文本流式返回;缓存等内部状态不可见。</div>
+            <div class="gets vv-local"><span class="ok">✔ 拿得到:</span> <b>已生成序列</b> · <b>KV cache</b>(技术可读) · <b>逐步耗时</b>(可加)</div>
+            <div class="gets vv-vllm"><span class="part">△ 拿得到:</span> <b>流式输出序列</b>;KV cache 不可见</div>
+            <div class="gets vv-api"><span class="part">△ 拿得到:</span> <b>流式输出文本</b>;内部缓存不可见</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="loopbar">↻ 回到 4.1 前向传播,重复 —— 直到 EOS / &lt;|im_end|&gt; 或 max_new_tokens(停止原因:本地可见;API 端以 finish_reason 返回)</div>
+
+      <div class="arrow"><span class="glyph">▼</span></div>
+
+      <div class="node">
+        <span class="no">5</span>
+        <div class="title">事件流推送 <code>meta → step×N → done</code> <span class="badge generic">流式通用</span></div>
+        <div class="desc">本地为 SSE(技术方案 §8);换 vLLM/API 后仍是流式,但<b>事件字段会随"能拿到什么"变窄而减少</b>(如 step 里没有 candidates)。</div>
+        <div class="gets"><span class="ok">✔ 拿得到:</span> <b>结构化事件序列</b>(字段集随部署方式收缩)</div>
+      </div>
+      <div class="arrow"><span class="glyph">▼</span></div>
+
+      <div class="node">
+        <span class="no">6</span>
+        <div class="title">前端可视化 <code>app.js</code> <span class="badge generic">产品层通用</span></div>
+        <div class="desc">Token 卡片、候选概率条、选中高亮、回答逐 token 增长、教学时刻。"过程先于答案"(红线 4)。</div>
+        <div class="gets"><span class="ok">✔ 展示:</span> 上游真实数据 + 机制解释标注(红线 2);<b>数据字段缺失时,对应视觉必须降级或隐藏,不能编造</b></div>
+      </div>
+      <div class="arrow"><span class="glyph">▼</span></div>
+
+      <div class="node">
+        <span class="no">7</span>
+        <div class="title">最终答案 <code>done 事件</code> <span class="badge generic">通用</span></div>
+        <div class="desc">生成结束,答案进入聊天记录,可开始下一轮。</div>
+        <div class="gets vv-local"><span class="ok">✔ 拿得到:</span> <b>final_answer</b> · <b>total_steps</b> · <b>duration_ms</b> · <b>stop_reason</b>(eos / max_tokens)</div>
+        <div class="gets vv-vllm"><span class="ok">✔ 拿得到:</span> <b>最终文本</b> · usage(tokens) · finish_reason · 耗时</div>
+        <div class="gets vv-api"><span class="ok">✔ 拿得到:</span> <b>最终文本</b> · usage · finish_reason · 耗时</div>
+      </div>
+
+    </div>
+
+    <!-- ==================== 侧栏清单 ==================== -->
+    <div class="side" data-view="local">
+
+      <div class="card viewname" id="viewname">当前视图:① 本地开源 · Qwen2.5-0.5B(手写生成循环)</div>
+
+      <div class="card ok vv-local">
+        <h3>✔ 拿得到(本地开源 · 最宽)</h3>
+        <ul>
+          <li><b>输入与上下文</b><span class="detail">输入文本 · 对话历史 · 合并上下文 · Token 文本/ID/位置/数量</span></li>
+          <li><b>每步生成</b><span class="detail">全词表 logits · 全概率分布 · Top-5+概率+名次 · 选中 token+精确概率 · 已生成序列 · KV cache</span></li>
+          <li><b>过程与结果</b><span class="detail">逐步耗时(可加)· 总步数 · 总耗时 · 停止原因 · 最终答案</span></li>
+          <li><b>可扩展(零障碍)</b><span class="detail">分布熵/不确定度 · 注意力权重(技术可拿,语义≠归因)</span></li>
+        </ul>
+      </div>
+      <div class="card no vv-local">
+        <h3>✖ 拿不到(所有模型一致)</h3>
+        <ul>
+          <li><b>"为什么选这个"</b><span class="detail">因果归因,不可获取</span></li>
+          <li><b>主观意图 / 想法</b><span class="detail">不可声称</span></li>
+          <li><b>注意力 ≠ 关注</b><span class="detail">数值可读,不等于"看重什么"</span></li>
+          <li><b>训练数据 / 权重先验</b><span class="detail">不可追溯</span></li>
+        </ul>
+      </div>
+
+      <div class="card ok vv-vllm">
+        <h3>✔ 拿得到(云端托管 · 中等)</h3>
+        <ul>
+          <li><b>输入与上下文</b><span class="detail">同本地(tokenize 在服务端,结果可读)</span></li>
+          <li><b>每步生成</b><span class="detail">logprobs 的 top-k 候选+概率 · 选中 token · 流式序列</span></li>
+          <li><b>过程与结果</b><span class="detail">usage · finish_reason · 最终答案</span></li>
+          <li><b>拿不到</b><span class="detail">全词表 logits · 全分布 · 熵 · KV cache · 注意力</span></li>
+        </ul>
+      </div>
+      <div class="card no vv-vllm">
+        <h3>✖ 拿不到(云端托管)</h3>
+        <ul>
+          <li><b>服务端内部</b><span class="detail">注意力 / 隐藏层 / KV cache</span></li>
+          <li><b>全量数值</b><span class="detail">全词表 logits / 完整分布 / 熵</span></li>
+          <li><b>语义层</b><span class="detail">因果归因 / 意图 / 思维链(与本地一致)</span></li>
+        </ul>
+      </div>
+
+      <div class="card ok vv-api">
+        <h3>✔ 拿得到(闭源 API · 最窄)</h3>
+        <ul>
+          <li><b>输出</b><span class="detail">最终文本 · 流式增量 · usage · finish_reason</span></li>
+          <li><b>有限 logprobs</b><span class="detail">OpenAI 兼容系可选 top_logprobs(≤20);Anthropic 无</span></li>
+          <li><b>思考文本(如有)</b><span class="detail">DeepSeek <code>reasoning_content</code> 全文 · OpenAI 摘要 · 本地 reasoning 模型则全文可见</span></li>
+        </ul>
+      </div>
+      <div class="card no vv-api">
+        <h3>✖ 拿不到(闭源 API)</h3>
+        <ul>
+          <li><b>全部内部状态</b><span class="detail">logits / 分布 / 注意力 / 缓存 / 隐藏层</span></li>
+          <li><b>真实内部思考</b><span class="detail">思考文本 ≠ 内部算法,仍是输出文本</span></li>
+          <li><b>语义层</b><span class="detail">因果归因 / 意图(与本地一致)</span></li>
+        </ul>
+      </div>
+
+      <div class="card summary">
+        <h3>◆ 三层边界(交互设计依据)</h3>
+        <p><b style="color:var(--real)">真实数据层</b>:黑盒出口之后的全部数值 —— 范围随部署方式伸缩,交互只能基于当前视图的数据。</p>
+        <p><b style="color:var(--explain)">机制解释层</b>:帮助理解的动画与标注,必须带"机制解释"标记。</p>
+        <p><b style="color:var(--nogo)">不可获取层</b>:黑盒内部与因果,所有模型一致 —— 显式标注"模型内部算法的一部分,不可查看"。</p>
+      </div>
+
+    </div>
+
+  </div>
+
+  <footer>
+    事实来源:llm-lab/backend/app.py · generator.py · schemas.py · docs/01-产品原始定义-v1.0.md 第 2、5 章 · docs/02-PRD-v1.md(决策日志:否决 DeepSeek API 因不暴露 logits)· docs/03-技术方案-v1.md §12 备用方案。
+    本图为项目文档,非产品界面;产品界面展示任何"其他模型"的过程数据时,只能来自真实调用,不能编造(红线 1/3)。
+  </footer>
+
+</div>
+
+<script>
+  (function () {
+    const tabs = document.querySelectorAll(".tab");
+    const flow = document.querySelector(".flow");
+    const side = document.querySelector(".side");
+    const viewname = document.getElementById("viewname");
+    const names = {
+      local: "当前视图:① 本地开源 · Qwen2.5-0.5B(手写生成循环)—— 数据可达性最宽",
+      vllm:   "当前视图:② 云端托管开源 · vLLM/TGI —— 数据可达性中等(仅 logprobs)",
+      api:    "当前视图:③ 闭源 API · OpenAI/DeepSeek/Claude —— 数据可达性最窄(可能含 thinking 摘要)",
+    };
+    tabs.forEach(function (t) {
+      t.addEventListener("click", function () {
+        tabs.forEach(function (x) { x.classList.remove("active"); });
+        t.classList.add("active");
+        const v = t.dataset.view;
+        flow.dataset.view = v;
+        side.dataset.view = v;
+        viewname.textContent = names[v];
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+  })();
+</script>
+</body>
+</html>
