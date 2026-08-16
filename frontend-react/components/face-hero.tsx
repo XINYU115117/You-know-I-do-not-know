@@ -92,6 +92,10 @@ export function FaceHero({
             ))}
           </div>
         </div>
+
+        <p className="mt-6 text-center text-xs text-[#8a8a8a]">
+          回答由本地小模型生成，可能不准确，请勿作为专业建议
+        </p>
       </main>
     </section>
   )

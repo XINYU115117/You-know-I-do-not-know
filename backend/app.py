@@ -26,6 +26,25 @@ TEMPERATURE = 0.8
 TOP_P = 0.9
 MAX_TURNS = 3  # 上下文瘦身：只保留最近 3 轮对话（每轮 = 1 user + 1 assistant）
 
+# 内容安全：system prompt 约束（降低不当输出概率）
+SYSTEM_PROMPT = (
+    "你是面向普通用户的 AI 科普助手，回答要简短、友好、通俗易懂。"
+    "你只提供一般性知识，不生成暴力、色情、违法或有害内容，"
+    "不提供医疗、法律、投资等专业建议。"
+)
+
+# 内容安全：输出关键词黑名单（轻量兜底，命中即遮蔽）
+SENSITIVE_WORDS = [
+    "色情", "淫秽", "赌博", "毒品", "自杀", "杀人", "爆炸物", "诈骗", "枪支制造",
+]
+
+
+def filter_sensitive(text: str) -> str:
+    """将命中敏感词的文本遮蔽为 *，兜底防御（非专业审核）。"""
+    for w in SENSITIVE_WORDS:
+        text = text.replace(w, "*" * len(w))
+    return text
+
 app = FastAPI(title="LLM 机制体验 - 后端")
 app.add_middleware(
     CORSMiddleware,
@@ -76,9 +95,14 @@ async def stream(text: str, conversation_id: str = ""):
     history_rounds = len(sess["turns"])
     sess["messages"].append({"role": "user", "content": text})
 
-    prompt_ids = gen.build_prompt(sess["messages"])
-    # 本轮输入单独 prompt：完整上下文 - 当前输入 = 历史 + 系统部分
-    alone_ids = gen.build_prompt([{"role": "user", "content": text}])
+    # 注入 system prompt 约束 + 历史 + 当前输入
+    messages_with_system = [{"role": "system", "content": SYSTEM_PROMPT}] + sess["messages"]
+    prompt_ids = gen.build_prompt(messages_with_system)
+    # 本轮输入单独 prompt（同样带 system）：完整上下文 - 当前输入 = 历史部分
+    alone_ids = gen.build_prompt([
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": text},
+    ])
     history_token_count = len(prompt_ids) - len(alone_ids)
     # 当前输入的 token（不带 chat 模板，展示"我的问题被拆成什么"）
     input_token_ids = gen.tokenizer.encode(text)
@@ -140,7 +164,7 @@ async def stream(text: str, conversation_id: str = ""):
                     stop_reason = "eos"
                     break
 
-            final_answer = gen.decode(generated_ids)
+            final_answer = filter_sensitive(gen.decode(generated_ids))
             sess["messages"].append({"role": "assistant", "content": final_answer})
             sess["turns"].append({"user": text, "assistant": final_answer})
             q.put(("done", DoneData(

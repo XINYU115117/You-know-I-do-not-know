@@ -23,12 +23,12 @@ export function StageProgress({ phase }: { phase: Phase }) {
             <div className="flex items-center gap-1.5">
               <span
                 className={cn(
-                  'grid size-6 place-items-center rounded-full border-2 text-xs font-semibold transition-colors',
+                  'grid size-6 place-items-center rounded-full text-xs font-semibold transition-colors',
                   active
-                    ? 'border-ink bg-pop-pink text-ink'
+                    ? 'bg-[#c97886] text-ink'
                     : done
-                      ? 'border-[#bcb7ad] bg-[#bcb7ad] text-ink'
-                      : 'border-[#bcb7ad] bg-transparent text-[#746b68]',
+                      ? 'border-2 border-[#bcb7ad] bg-transparent text-[#746b68]'
+                      : 'border-2 border-[#d5d0c7] bg-transparent text-[#746b68]',
                 )}
                 aria-current={active ? 'step' : undefined}
               >

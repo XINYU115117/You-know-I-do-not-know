@@ -29,6 +29,7 @@ export interface Example {
   question: string
   keywords: string[]
   fragments: Fragment[]
+  historyRounds: number
 }
 
 function extractKeywords(tokens: Fragment[]): string[] {
@@ -101,6 +102,7 @@ export function connectSSE(
                 callbacks.onMeta({
                   id: d.conversation_id,
                   question: d.input_text,
+                  historyRounds: d.history_rounds ?? 0,
                   keywords: extractKeywords(fragments),
                   fragments,
                 })
@@ -166,4 +168,10 @@ export function getConversationId(): string {
 }
 
 export const answerOf = (steps: GenStep[]): string =>
-  steps.map((s) => s.selectedText).join('')
+  steps.map((s) => displayToken(s.selectedText)).filter(Boolean).join('')
+
+/** 展示层：特殊 token（<|im_end|> 等）不显示，其余原样返回 */
+export function displayToken(text: string): string {
+  if (/^<\|.*\|>$/.test(text)) return ''
+  return text
+}

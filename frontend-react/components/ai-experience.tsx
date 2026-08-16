@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ArrowRight, Lightbulb, Scissors, Sparkles } from 'lucide-react'
-import { connectSSE, getConversationId, answerOf, type Example, type GenStep, type Candidate } from '@/lib/api'
+import { connectSSE, getConversationId, answerOf, displayToken, type Example, type GenStep, type Candidate } from '@/lib/api'
 import { StageProgress, type Phase } from '@/components/stage-progress'
 import { FaceHero } from '@/components/face-hero'
 import { Sticker } from '@/components/sticker'
@@ -129,6 +129,9 @@ export function AiExperience() {
     const step = steps[activeStep]
     const hesitation = step.candidates[0].prob < 0.3
     const showMs = hesitation ? 1000 : 450
+    // 出现"注意"标签（模型选了非第一名）时停留 1 秒，其余字块 500ms
+    const commitHold =
+      step.selectedRank !== null && step.selectedRank > 1 ? 1000 : 500
 
     setCommitting(false)
     const t1 = setTimeout(() => {
@@ -137,7 +140,7 @@ export function AiExperience() {
     }, showMs)
     const t2 = setTimeout(() => {
       setActiveStep((s) => s + 1)
-    }, showMs + 200)
+    }, showMs + commitHold)
     return () => {
       clearTimeout(t1)
       clearTimeout(t2)
@@ -146,7 +149,7 @@ export function AiExperience() {
 
   const currentStep =
     activeStep < stepsRef.current.length ? stepsRef.current[activeStep] : null
-  const hesitating = currentStep ? currentStep.candidates[0].prob < 0.5 && !committing : false
+  const hesitating = currentStep ? currentStep.candidates[0].prob < 0.3 && !committing : false
 
   return (
     <div className={phase === 'input' ? 'w-full' : 'mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-6 sm:py-10'}>
@@ -196,19 +199,23 @@ export function AiExperience() {
                       AI 正在拼出的回答
                     </p>
                     <p className="mt-2 min-h-8 text-lg leading-relaxed text-foreground">
-                      {committedTokens.map((t, i) => (
-                        <span
-                          key={i}
-                          className={cn(
-                            'inline animate-ai-pop',
-                            i === committedTokens.length - 1 &&
-                              committing &&
-                              'rounded bg-pop-yellow px-0.5 text-ink',
-                          )}
-                        >
-                          {t}
-                        </span>
-                      ))}
+                      {committedTokens.map((t, i) => {
+                        const d = displayToken(t)
+                        if (!d) return null
+                        return (
+                          <span
+                            key={i}
+                            className={cn(
+                              'inline animate-ai-pop',
+                              i === committedTokens.length - 1 &&
+                                committing &&
+                                'rounded bg-pop-yellow px-0.5 text-ink',
+                            )}
+                          >
+                            {d}
+                          </span>
+                        )
+                      })}
                       {!predictionDone && (
                         <span className="ml-0.5 inline-block h-5 w-1 translate-y-0.5 animate-pulse bg-accent align-middle" />
                       )}
@@ -237,6 +244,15 @@ export function AiExperience() {
                         </div>
                       )}
 
+                      {committing && currentStep && currentStep.selectedRank !== null && currentStep.selectedRank > 1 && (
+                        <div className="flex items-start gap-2 rounded-xl bg-pop-yellow/20 px-3 py-2 text-sm text-ink animate-ai-pop">
+                          <Lightbulb className="mt-0.5 size-4 shrink-0" />
+                          <span>
+                            注意：模型没有选概率最高的「{currentStep.candidates[0].text}」，而是选了第 {currentStep.selectedRank} 名的「{currentStep.selectedText}」——它在按概率抽签，不是永远选最可能的。
+                          </span>
+                        </div>
+                      )}
+
                       <PredictionCards
                         candidates={currentStep.candidates}
                         committing={committing}
@@ -252,7 +268,7 @@ export function AiExperience() {
                   )}
 
                   {predictionDone && (
-                    <div className="mt-8 flex flex-col items-center gap-4 animate-ai-rise">
+                    <div className="mt-8 flex flex-col items-center gap-14 animate-ai-rise">
                       <p className="text-sm text-muted-foreground">
                         回答生成完成 · 一共预测了 {stepsRef.current.length} 次
                       </p>
@@ -275,6 +291,7 @@ export function AiExperience() {
                   <div className="mt-5">
                     <ReviewCard
                       answer={answerOf(stepsRef.current)}
+                      highlight={pickHighlight(stepsRef.current)}
                       onRestart={restart}
                     />
                   </div>
@@ -286,6 +303,49 @@ export function AiExperience() {
       </main>
     </div>
   )
+}
+
+/** 从生成步骤中抽取 1 个最典型的案例用于 review 复盘 */
+function pickHighlight(steps: GenStep[]): {
+  title: string
+  desc: string
+  step: GenStep
+} | null {
+  if (steps.length === 0) return null
+  // 优先：选中了非第一名的步骤（最能体现"抽签"）
+  const surprise = steps.find((s) => s.selectedRank !== 1)
+  if (surprise) {
+    if (surprise.selectedRank === null) {
+      return {
+        title: `模型选了「${surprise.selectedText}」`,
+        desc: `这个选择甚至不在最可能的 5 个候选里——这就是"抽签"的随机性，模型不是永远选最有把握的。`,
+        step: surprise,
+      }
+    }
+    return {
+      title: `模型没选概率最高的`,
+      desc: `在候选里「${surprise.candidates[0].text}」概率最高，但模型选了第 ${surprise.selectedRank} 名的「${surprise.selectedText}」。它按概率抽签，所以同一个问题每次答案可能不同。`,
+      step: surprise,
+    }
+  }
+  // 次选：最犹豫的一步（第一名概率也低）
+  let minStep = steps[0]
+  let minProb = steps[0].candidates[0]?.prob ?? 1
+  for (const s of steps) {
+    const p = s.candidates[0]?.prob ?? 1
+    if (p < minProb) {
+      minProb = p
+      minStep = s
+    }
+  }
+  if (minProb < 0.5) {
+    return {
+      title: `最犹豫的一步`,
+      desc: `生成「${minStep.selectedText}」这一步时，概率最高的候选也只有 ${Math.round(minProb * 100)}% 把握——越到难的地方，模型越不确定。`,
+      step: minStep,
+    }
+  }
+  return null
 }
 
 function QuestionLabel({ question }: { question: string }) {
@@ -332,10 +392,16 @@ function OrganizingStage({ example }: { example: Example | null }) {
   )
 }
 
-function FragmentsStage({ example, onNext }: { example: Example; onNext: () => void }) {
+function FragmentsStage({ example, onNext }: { example: Example | null; onNext: () => void }) {
   return (
-    <section className="fragments-stage">
+    <section className="fragments-stage -mt-10">
       <QuestionLabel question={example?.question ?? ''} />
+
+      <div className="flat-note mx-auto mt-6 max-w-md p-4 text-center">
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          点击任意碎片查看 AI 的理解
+        </p>
+      </div>
 
       <div className="mt-6 flex flex-wrap justify-center gap-4">
         {example?.fragments.map((f, i) => (
@@ -343,14 +409,7 @@ function FragmentsStage({ example, onNext }: { example: Example; onNext: () => v
         ))}
       </div>
 
-      <div className="flat-note mx-auto mt-8 max-w-md p-4 text-center">
-        <p className="text-sm leading-relaxed text-muted-foreground">
-          <span className="font-semibold text-foreground">点一下</span>
-          任意碎片 —— AI 不会像人一样理解文字，它会把文字换成数字来计算。
-        </p>
-      </div>
-
-      <div className="mt-8 flex justify-center">
+      <div className="mt-[72px] flex justify-center">
         <button type="button" onClick={onNext} className="btn-retro bg-ink text-sm text-paper">
           看 AI 如何预测下一步
           <ArrowRight className="size-4" />

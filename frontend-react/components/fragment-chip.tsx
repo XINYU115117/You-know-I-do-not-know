@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, type CSSProperties } from 'react'
-import type { Fragment } from '@/lib/api'
+import { displayToken, type Fragment } from '@/lib/api'
 const STYLES = [
   { shape: 'petal', color: '#d99578', rotate: -2 },
   { shape: 'blob', color: '#c97886', rotate: 2 },
@@ -30,13 +30,13 @@ export function FragmentChip({ fragment, index }: { fragment: Fragment; index: n
     >
       {!revealed ? (
         <>
-          <span className="fragment-chip-text">{fragment.text}</span>
+          <span className="fragment-chip-text">{displayToken(fragment.text)}</span>
           <span className="fragment-chip-caption">人类看到</span>
         </>
       ) : (
         <>
           <span className="fragment-chip-token">#{fragment.tokenId}</span>
-          <span className="fragment-chip-text">{fragment.text}</span>
+          <span className="fragment-chip-text">{displayToken(fragment.text)}</span>
           <span className="fragment-chip-caption">AI 看到</span>
         </>
       )}

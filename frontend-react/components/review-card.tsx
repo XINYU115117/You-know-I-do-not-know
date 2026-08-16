@@ -2,6 +2,9 @@
 
 import { RotateCcw, Scissors, Sparkles, Layers } from 'lucide-react'
 import { Sticker, type StickerShape, type StickerColor } from '@/components/sticker'
+import { PredictionCards } from '@/components/prediction-cards'
+import { QuizCard } from '@/components/quiz-card'
+import type { GenStep } from '@/lib/api'
 
 const THINGS: {
   icon: typeof Scissors
@@ -33,7 +36,15 @@ const THINGS: {
   },
 ]
 
-export function ReviewCard({ answer, onRestart }: { answer: string; onRestart: () => void }) {
+export function ReviewCard({
+  answer,
+  highlight,
+  onRestart,
+}: {
+  answer: string
+  highlight: { title: string; desc: string; step: GenStep } | null
+  onRestart: () => void
+}) {
   return (
     <div className="w-full animate-ai-rise">
       <div className="review-answer rounded-2xl p-6 sm:p-8">
@@ -66,9 +77,24 @@ export function ReviewCard({ answer, onRestart }: { answer: string; onRestart: (
           })}
         </ol>
 
-        <blockquote className="review-note mt-6 rounded-2xl px-5 py-4 text-pretty text-sm leading-relaxed text-muted-foreground">
-          AI 不是像人一样思考，而是在预测最可能的表达。
-        </blockquote>
+        {highlight && (
+          <div className="mt-6 rounded-2xl bg-pop-yellow/15 p-5 animate-ai-rise">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              这一次，最值得看的一步
+            </p>
+            <p className="mt-2 text-lg font-bold text-ink">{highlight.title}</p>
+            <div className="mt-4">
+              <PredictionCards
+                candidates={highlight.step.candidates}
+                committing={true}
+                selectedText={highlight.step.selectedText}
+                selectedRank={highlight.step.selectedRank}
+              />
+            </div>
+            <p className="mt-4 text-sm leading-relaxed text-muted-foreground">{highlight.desc}</p>
+          </div>
+        )}
+
       </div>
 
       <div className="mt-6 flex justify-center">
@@ -77,6 +103,8 @@ export function ReviewCard({ answer, onRestart }: { answer: string; onRestart: (
           再问一个问题
         </button>
       </div>
+
+      <QuizCard />
     </div>
   )
 }

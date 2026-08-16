@@ -1,9 +1,11 @@
 'use client'
 
 import type { Candidate } from '@/lib/api'
+import { displayToken } from '@/lib/api'
 import { cn } from '@/lib/utils'
 
-const TRACKS = ['#628eae', '#9a8fa8', '#d99578', '#c97886']
+// 概率条颜色：低饱和但不与背景混淆，选中态仍清晰可辨
+const TRACKS = ['#7a9cbf', '#a08ca8', '#d99578', '#c97886']
 
 export function PredictionCards({
   candidates,
@@ -34,29 +36,20 @@ export function PredictionCards({
                 : 'prediction-card-idle',
             )}
           >
+            {/* 真实概率进度条：占满整个高度，右端圆角与卡片一致 */}
             <div
               className={cn(
-                'absolute inset-y-0 left-0 z-0 transition-all duration-500',
-                chosen && committing ? 'opacity-0' : 'opacity-70',
+                'absolute inset-y-0 left-0 z-0 rounded-r-full transition-all duration-500',
+                chosen && committing ? 'opacity-60' : 'opacity-90',
               )}
-              style={{ width: `${pct}%`, background: TRACKS[i % TRACKS.length] }}
+              style={{ width: `${Math.max(pct, 3)}%`, background: TRACKS[i % TRACKS.length] }}
               aria-hidden
             />
-            <div className="relative flex items-center justify-between gap-3">
-              <span
-                className={cn(
-                  'font-semibold',
-                  chosen && committing ? 'text-paper' : 'text-foreground',
-                )}
-              >
-                {c.text}
+            <div className="relative z-10 flex items-center justify-between gap-3">
+              <span className="font-semibold text-foreground">
+                {displayToken(c.text)}
               </span>
-              <span
-                className={cn(
-                  'font-mono text-sm tabular-nums',
-                  chosen && committing ? 'text-paper' : 'text-muted-foreground',
-                )}
-              >
+              <span className="font-mono text-sm tabular-nums text-muted-foreground">
                 {pct}%
               </span>
             </div>

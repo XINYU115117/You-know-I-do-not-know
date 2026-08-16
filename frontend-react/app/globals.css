@@ -137,7 +137,7 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
-@media (prefers-color-scheme: dark) {
+@media (prefers-color-scheme: no-preference) {
   :root:not(.light) {
     color-scheme: dark;
     --background: oklch(0.145 0 0);
@@ -564,11 +564,8 @@
   background: #c97886;
   color: #1d1d1d;
 }
-.predicting-progress li:nth-child(-n + 3) span[aria-current='step'],
 .predicting-progress li:nth-child(-n + 3) > div > span {
-  background: #bcb7ad;
-  border-color: #bcb7ad;
-  color: #514b45;
+  background: transparent;
 }
 .predicting-progress li:nth-child(4) span[aria-current='step'] {
   background: #c97886;
@@ -583,7 +580,7 @@
 .fragments-progress [aria-current='step'],
 .predicting-progress [aria-current='step'],
 .review-progress [aria-current='step'] {
-  border-color: #1d1d1d !important;
+  border-color: transparent !important;
   background: #c97886 !important;
   color: #1d1d1d !important;
 }
@@ -668,7 +665,7 @@
   box-shadow: none;
 }
 .review-note {
-  background: #f0dfae !important;
+  background: transparent !important;
   color: #746b68 !important;
   font-weight: 400 !important;
 }
@@ -794,7 +791,7 @@
 .fragments-progress [aria-current='step'],
 .predicting-progress [aria-current='step'],
 .review-progress [aria-current='step'] {
-  border: 2px solid #1d1d1d !important;
+  border: none !important;
   background: #c97886 !important;
   color: #1d1d1d !important;
 }
@@ -919,7 +916,7 @@
 .fragments-progress [aria-current='step'],
 .predicting-progress [aria-current='step'],
 .review-progress [aria-current='step'] {
-  border: 2px solid #1d1d1d !important;
+  border: none !important;
   background: #c97886 !important;
   color: #1d1d1d !important;
 }
@@ -942,3 +939,20 @@
 .organizing-keyword:nth-child(3) { --blob-dur: 7.2s; }
 .organizing-keyword:nth-child(4) { --blob-dur: 6.8s; }
 .organizing-keyword:nth-child(5) { --blob-dur: 7.6s; }
+
+/* ===== 最终覆盖：选中步骤圆圈，统一 #c97886 无描边（压过前面所有历史 override） ===== */
+.organizing-progress [aria-current='step'],
+.fragments-progress [aria-current='step'],
+.predicting-progress [aria-current='step'],
+.review-progress [aria-current='step'] {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  background: #c97886 !important;
+  color: #1d1d1d !important;
+}
+
+/* ===== 隐藏 Next.js 开发调试指示器（左下角黑点） ===== */
+nextjs-portal {
+  display: none !important;
+}
