@@ -1,6 +1,6 @@
 import { cn } from '@/lib/utils'
 
-export type Phase = 'input' | 'organizing' | 'fragments' | 'predicting' | 'review'
+export type Phase = 'input' | 'organizing' | 'fragments' | 'predicting' | 'review' | 'chat'
 
 const STEPS: { key: Phase; label: string }[] = [
   { key: 'input', label: '提问' },

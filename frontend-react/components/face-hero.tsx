@@ -36,7 +36,8 @@ export function FaceHero({
 
   return (
     <section className="home-page relative flex min-h-[calc(100svh-1px)] w-full flex-col overflow-hidden bg-[#fffef5] px-6 py-7 text-[#050505] sm:px-10 sm:py-9">
-      <header className="relative z-20 flex items-center gap-3 text-[clamp(1.15rem,1.45vw,1.8rem)] font-medium tracking-tight">
+      <div className="flex h-full w-full flex-col" style={{ zoom: 0.9 }}>
+      <header className="relative z-20 flex items-center gap-3 text-[clamp(0.92rem,1.16vw,1.44rem)] font-medium tracking-tight">
         <span aria-hidden className="brand-spark">✦</span>
         <span>看看 AI 是如何思考的？</span>
       </header>
@@ -53,8 +54,10 @@ export function FaceHero({
           </div>
         </div>
 
+        <div className="flex w-full flex-col items-center" style={{ transform: 'translateY(40px)' }}>
         <form
           className="home-input-wrap"
+          style={{ transform: 'translateY(-20px)' }}
           onSubmit={(e) => {
             e.preventDefault()
             onStart(input)
@@ -96,7 +99,9 @@ export function FaceHero({
         <p className="mt-6 text-center text-xs text-[#8a8a8a]">
           回答由本地小模型生成，可能不准确，请勿作为专业建议
         </p>
+        </div>
       </main>
+      </div>
     </section>
   )
 }

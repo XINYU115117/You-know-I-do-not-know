@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'export', // 静态导出：纯 HTML/JS/CSS，服务器无需 Node 进程（省内存）
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -7,14 +8,6 @@ const nextConfig = {
     unoptimized: true,
   },
   allowedDevOrigins: ['127.0.0.1', 'localhost'],
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://127.0.0.1:8000/api/:path*',
-      },
-    ]
-  },
 }
 
 export default nextConfig

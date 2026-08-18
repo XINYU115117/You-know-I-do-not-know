@@ -1,5 +1,5 @@
 """数据协议（技术方案 v1 第 8 节）。字段名锁定，前后端共用。"""
-from typing import List, Optional
+from typing import List, Optional, Union
 from pydantic import BaseModel
 
 
@@ -10,7 +10,7 @@ class TokenData(BaseModel):
 
 
 class CandidateToken(BaseModel):
-    token_id: int
+    token_id: Union[int, str]  # API 模式为 token 字符串；本地模式为 int
     token_text: str
     probability: float
     rank: Optional[int]  # 1-5 为 Top-5 名次；None 表示该 token 不在 Top-5 内
@@ -25,6 +25,8 @@ class GenerationStep(BaseModel):
 
 
 class MetaData(BaseModel):
+    session_id: str              # 每次提问生成一个，埋点/统计主键
+    anonymous_user_id: str       # 浏览器匿名 ID，原样回传
     conversation_id: str
     model: str
     input_text: str
@@ -44,3 +46,11 @@ class DoneData(BaseModel):
 class ErrorData(BaseModel):
     code: str
     message: str
+
+
+class EventIn(BaseModel):
+    """前端统一事件上报（page_view / review_viewed / quiz_* / restart_clicked）。"""
+    event: str
+    anonymous_user_id: str
+    session_id: str = ""          # page_view 等可空
+    data: dict = {}

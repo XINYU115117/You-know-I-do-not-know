@@ -40,10 +40,12 @@ export function ReviewCard({
   answer,
   highlight,
   onRestart,
+  sessionId,
 }: {
   answer: string
   highlight: { title: string; desc: string; step: GenStep } | null
   onRestart: () => void
+  sessionId: string
 }) {
   return (
     <div className="w-full animate-ai-rise">
@@ -104,7 +106,7 @@ export function ReviewCard({
         </button>
       </div>
 
-      <QuizCard />
+      <QuizCard sessionId={sessionId} />
     </div>
   )
 }

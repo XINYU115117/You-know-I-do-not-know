@@ -26,6 +26,7 @@ export interface Fragment {
 
 export interface Example {
   id: string
+  sessionId: string
   question: string
   keywords: string[]
   fragments: Fragment[]
@@ -52,9 +53,9 @@ export function connectSSE(
     onError: (msg: string) => void
   },
 ): () => void {
-  // 直连后端（绕过 Next.js rewrites 代理，避免 dev 模式对 SSE 流的缓冲）
-  const base = 'http://127.0.0.1:8000'
-  const url = `${base}/api/stream?text=${encodeURIComponent(text)}&conversation_id=${encodeURIComponent(conversationId)}`
+  // 本地默认直连 8000（绕过 dev 代理的 SSE 缓冲）；部署时设 NEXT_PUBLIC_API_URL='' 走同源 /api
+  const base = process.env.NEXT_PUBLIC_API_URL ?? 'http://127.0.0.1:8000'
+  const url = `${base}/api/stream?text=${encodeURIComponent(text)}&conversation_id=${encodeURIComponent(conversationId)}&anonymous_user_id=${encodeURIComponent(getAnonymousUserId())}`
   const controller = new AbortController()
   let aborted = false
 
@@ -101,6 +102,7 @@ export function connectSSE(
                 )
                 callbacks.onMeta({
                   id: d.conversation_id,
+                  sessionId: d.session_id ?? '',
                   question: d.input_text,
                   historyRounds: d.history_rounds ?? 0,
                   keywords: extractKeywords(fragments),
@@ -167,11 +169,24 @@ export function getConversationId(): string {
   return cid
 }
 
+export function getAnonymousUserId(): string {
+  if (typeof window === 'undefined') return ''
+  let uid = localStorage.getItem('llm_uid')
+  if (!uid) {
+    uid = 'usr_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
+    localStorage.setItem('llm_uid', uid)
+  }
+  return uid
+}
+
 export const answerOf = (steps: GenStep[]): string =>
   steps.map((s) => displayToken(s.selectedText)).filter(Boolean).join('')
 
-/** 展示层：特殊 token（<|im_end|> 等）不显示，其余原样返回 */
+/** 展示层：特殊 token（<|im_end|> 等）不显示；字节级乱码/不可见字符清洗；其余原样返回 */
 export function displayToken(text: string): string {
   if (/^<\|.*\|>$/.test(text)) return ''
-  return text
+  return text.replace(
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\uD800-\uDFFF\u200B-\u200D\uFEFF\uFFFD]/g,
+    '',
+  )
 }

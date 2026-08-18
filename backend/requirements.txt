@@ -1,6 +1,4 @@
-# Intel Mac (x86_64): PyTorch 官方最后支持的版本为 2.2.2（2.3+ 不再提供 x86_64 wheel）
-torch==2.2.2
-numpy==1.26.4   # torch 2.2.2 与 NumPy 2.x 不兼容（官方要求 numpy<2）
+# SQLite 模式：零数据库依赖，无需 psycopg
 transformers>=4.44.0,<5.0
 tiktoken>=0.7.0
 fastapi>=0.110.0

@@ -28,21 +28,23 @@ export function PredictionCards({
         return (
           <div
             key={c.text + i}
-            style={{ animationDelay: `${i * 70}ms` }}
             className={cn(
-              'prediction-card relative overflow-hidden rounded-[2rem] px-4 py-3 animate-ai-pop transition-all duration-300',
+              'prediction-card relative overflow-hidden rounded-[2rem] px-4 py-3 ai-card-pop transition-all duration-300',
               chosen && committing
                 ? 'prediction-card-selected'
                 : 'prediction-card-idle',
             )}
           >
-            {/* 真实概率进度条：占满整个高度，右端圆角与卡片一致 */}
+            {/* 真实概率进度条：占满整个高度，直角（与其他进度形状统一） */}
             <div
               className={cn(
-                'absolute inset-y-0 left-0 z-0 rounded-r-full transition-all duration-500',
+                'absolute inset-y-0 left-0 z-0 transition-all duration-500',
                 chosen && committing ? 'opacity-60' : 'opacity-90',
               )}
-              style={{ width: `${Math.max(pct, 3)}%`, background: TRACKS[i % TRACKS.length] }}
+              style={{
+                width: `max(0px, calc(${Math.max(pct, 3)}% - 10px))`,
+                background: TRACKS[i % TRACKS.length],
+              }}
               aria-hidden
             />
             <div className="relative z-10 flex items-center justify-between gap-3">

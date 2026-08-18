@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { ArrowRight, Lightbulb, Scissors, Sparkles } from 'lucide-react'
 import { connectSSE, getConversationId, answerOf, displayToken, type Example, type GenStep, type Candidate } from '@/lib/api'
+import { track } from '@/lib/analytics'
 import { StageProgress, type Phase } from '@/components/stage-progress'
 import { FaceHero } from '@/components/face-hero'
 import { Sticker } from '@/components/sticker'
@@ -10,6 +11,7 @@ import { FragmentChip } from '@/components/fragment-chip'
 import { PredictionCards } from '@/components/prediction-cards'
 import { ConfidenceBar } from '@/components/confidence-bar'
 import { ReviewCard } from '@/components/review-card'
+import { ChatView, type ChatMessage } from '@/components/chat-view'
 import { cn } from '@/lib/utils'
 
 const KEYWORD_STYLES: { shape: 'seal' | 'blob' | 'hex' | 'petal' | 'diamond'; color: 'pop-orange' | 'pop-pink' | 'pop-blue' | 'pop-lime' | 'pop-purple'; rotate: number }[] = [
@@ -24,6 +26,8 @@ export function AiExperience() {
   const [phase, setPhase] = useState<Phase>('input')
   const [input, setInput] = useState('')
   const [example, setExample] = useState<Example | null>(null)
+  const [question, setQuestion] = useState('')                       // 本轮问题（进聊天页时归档）
+  const [history, setHistory] = useState<ChatMessage[]>([])          // 多轮对话记录（聊天页气泡）
 
   const [activeStep, setActiveStep] = useState(0)
   const [committing, setCommitting] = useState(false)
@@ -35,13 +39,25 @@ export function AiExperience() {
   const disconnectRef = useRef<(() => void) | null>(null)
   const stepsRef = useRef<GenStep[]>([])       // SSE 实时缓冲
   const doneRef = useRef(false)                 // 后端是否已结束
+  const sessionIdRef = useRef('')               // 当前体验的 session_id（meta 事件回传）
 
   const organizingStartRef = useRef(0)
+
+  // 埋点：页面加载
+  useEffect(() => {
+    track('page_view')
+  }, [])
+
+  // 埋点：进入 review 阶段
+  useEffect(() => {
+    if (phase === 'review') track('review_viewed', {}, sessionIdRef.current)
+  }, [phase])
 
   function start(question: string) {
     const q = question.trim()
     if (!q) return
     setInput('')
+    setQuestion(q)
     setActiveStep(0)
     setCommitting(false)
     setCommittedTokens([])
@@ -66,6 +82,7 @@ export function AiExperience() {
       onMeta: (ex) => {
         metaReceived = true
         clearTimeout(fallbackTimer)
+        sessionIdRef.current = ex.sessionId
         setExample(ex)
         // meta 数据到达即跳 fragments，但至少展示 1500ms 整理动画
         const remaining = Math.max(0, 1500 - (Date.now() - organizingStartRef.current))
@@ -93,11 +110,26 @@ export function AiExperience() {
     }
   }
 
+  // 进入聊天页：把本轮问题 + 回答归档进历史
+  function toChat() {
+    const q = question.trim()
+    const a = answerOf(stepsRef.current).trim()
+    setHistory((h) => [
+      ...h,
+      ...(q ? [{ role: 'user' as const, content: q }] : []),
+      ...(a ? [{ role: 'assistant' as const, content: a }] : []),
+    ])
+    setPhase('chat')
+  }
+
   function restart() {
+    track('restart_clicked', {}, sessionIdRef.current)
     disconnectRef.current?.()
     setPhase('input')
     setExample(null)
     setInput('')
+    setQuestion('')
+    setHistory([])
     setActiveStep(0)
     setCommitting(false)
     setCommittedTokens([])
@@ -128,10 +160,10 @@ export function AiExperience() {
 
     const step = steps[activeStep]
     const hesitation = step.candidates[0].prob < 0.3
-    const showMs = hesitation ? 1000 : 450
-    // 出现"注意"标签（模型选了非第一名）时停留 1 秒，其余字块 500ms
-    const commitHold =
-      step.selectedRank !== null && step.selectedRank > 1 ? 1000 : 500
+    const hasNotice = step.selectedRank !== null && step.selectedRank > 1
+    // 带标签：出现后停留 1.5 秒；无标签：候选+选中总共 0.6 秒
+    const showMs = hesitation ? 1500 : hasNotice ? 450 : 300
+    const commitHold = hasNotice ? 1500 : hesitation ? 1000 : 300
 
     setCommitting(false)
     const t1 = setTimeout(() => {
@@ -152,8 +184,8 @@ export function AiExperience() {
   const hesitating = currentStep ? currentStep.candidates[0].prob < 0.3 && !committing : false
 
   return (
-    <div className={phase === 'input' ? 'w-full' : 'mx-auto flex min-h-dvh w-full max-w-3xl flex-col px-4 py-6 sm:py-10'}>
-      {phase !== 'input' && phase !== 'organizing' && (
+    <div className={phase === 'input' || phase === 'chat' ? 'w-full' : 'mx-auto flex min-h-dvh w-full max-w-4xl flex-col px-4 py-6 sm:py-10'}>
+      {phase !== 'input' && phase !== 'chat' && phase !== 'organizing' && (
         <header className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="text-sm font-semibold tracking-tight">AI 是怎么想的？</span>
@@ -168,13 +200,16 @@ export function AiExperience() {
         </header>
       )}
 
-      {phase !== 'input' && (
+      {phase !== 'input' && phase !== 'chat' && (
         <div className={`${phase === 'organizing' ? 'organizing-progress pt-7' : phase === 'fragments' ? 'fragments-progress mt-6' : phase === 'predicting' ? 'predicting-progress mt-6' : phase === 'review' ? 'review-progress mt-6' : 'mt-6'}`}>
           <StageProgress phase={phase} />
         </div>
       )}
 
-      <main className={phase === 'input' ? 'w-full' : 'flex flex-1 flex-col items-center justify-center py-8'}>
+      <main className={phase === 'input' || phase === 'chat' ? 'w-full' : 'flex flex-1 flex-col items-center justify-center py-8'}>
+        {phase === 'chat' && (
+          <ChatView history={history} onSend={start} onHome={restart} />
+        )}
         {phase === 'input' && (
           <FaceHero input={input} setInput={setInput} onStart={start} composingRef={composingRef} />
         )}
@@ -183,8 +218,8 @@ export function AiExperience() {
           <OrganizingStage example={example} />
         )}
 
-        {phase !== 'input' && phase !== 'organizing' && (
-          <div className="flat-stage relative mx-auto w-full max-w-3xl animate-ai-rise">
+        {phase !== 'input' && phase !== 'chat' && phase !== 'organizing' && (
+          <div className="flat-stage relative mx-auto w-full max-w-4xl animate-ai-rise">
             <div className="relative px-4 pb-6 pt-4 sm:px-7 sm:pb-8 sm:pt-6">
               {phase === 'fragments' && (
                 <FragmentsStage example={example} onNext={() => setPhase('predicting')} />
@@ -209,6 +244,7 @@ export function AiExperience() {
                               'inline animate-ai-pop',
                               i === committedTokens.length - 1 &&
                                 committing &&
+                                !predictionDone &&
                                 'rounded bg-pop-yellow px-0.5 text-ink',
                             )}
                           >
@@ -245,7 +281,7 @@ export function AiExperience() {
                       )}
 
                       {committing && currentStep && currentStep.selectedRank !== null && currentStep.selectedRank > 1 && (
-                        <div className="flex items-start gap-2 rounded-xl bg-pop-yellow/20 px-3 py-2 text-sm text-ink animate-ai-pop">
+                        <div className="flex items-start gap-2 rounded-xl bg-pop-yellow/20 px-3 py-2 text-sm text-ink animate-ai-rise">
                           <Lightbulb className="mt-0.5 size-4 shrink-0" />
                           <span>
                             注意：模型没有选概率最高的「{currentStep.candidates[0].text}」，而是选了第 {currentStep.selectedRank} 名的「{currentStep.selectedText}」——它在按概率抽签，不是永远选最可能的。
@@ -292,7 +328,8 @@ export function AiExperience() {
                     <ReviewCard
                       answer={answerOf(stepsRef.current)}
                       highlight={pickHighlight(stepsRef.current)}
-                      onRestart={restart}
+                      onRestart={toChat}
+                      sessionId={sessionIdRef.current}
                     />
                   </div>
                 </section>
@@ -350,7 +387,7 @@ function pickHighlight(steps: GenStep[]): {
 
 function QuestionLabel({ question }: { question: string }) {
   return (
-    <div className="flex items-start gap-2">
+    <div className="mx-2.5 flex items-start gap-2">
       <Sticker shape="pill" color="pop-blue" rotate={-3} className="mt-0.5 shrink-0 text-[11px]">
         <span className="px-2.5 py-0.5 font-semibold text-ink">你问</span>
       </Sticker>

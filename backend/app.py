@@ -6,22 +6,31 @@
 """
 import asyncio
 import json
+import os
 import queue
 import threading
 import time
 import uuid
-from pathlib import Path
+from collections import defaultdict
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
-from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse, StreamingResponse
 
+import db
 from generator import Generator
-from schemas import CandidateToken, DoneData, ErrorData, GenerationStep, MetaData, TokenData
+from schemas import (
+    CandidateToken,
+    DoneData,
+    ErrorData,
+    EventIn,
+    GenerationStep,
+    MetaData,
+    TokenData,
+)
 
 MAX_INPUT_CHARS = 100
-MAX_NEW_TOKENS = 200
+MAX_NEW_TOKENS = 500  # logprobs 模式下预算比名义值小，500 保证长答案完整生成
 TEMPERATURE = 0.8
 TOP_P = 0.9
 MAX_TURNS = 3  # 上下文瘦身：只保留最近 3 轮对话（每轮 = 1 user + 1 assistant）
@@ -46,18 +55,42 @@ def filter_sensitive(text: str) -> str:
     return text
 
 app = FastAPI(title="LLM 机制体验 - 后端")
+
+# CORS：本地开发前端 3000 → 后端 8000 是跨域，必须放行；
+# 部署时同源反代不受影响，且用 CORS_ORIGINS 收紧到正式域名
+_CORS_ORIGINS = os.getenv(
+    "CORS_ORIGINS",
+    "http://127.0.0.1:3000,http://localhost:3000,http://localhost",
+)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in _CORS_ORIGINS.split(",") if o.strip()],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# 限流（防刷，部署时开启）：同 IP 每分钟最多 RATE_LIMIT_PER_MIN 次 /api/stream。
+# 本地开发默认不限流（设为 0）；部署时 docker-compose 注入 RATE_LIMIT_PER_MIN=10
+RATE_LIMIT_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "0"))
+_rate: dict = defaultdict(list)
+
+
+@app.middleware("http")
+async def rate_limit(request: Request, call_next):
+    if RATE_LIMIT_PER_MIN > 0 and request.url.path.startswith("/api/stream"):
+        client = request.client.host if request.client else "unknown"
+        now = time.time()
+        _rate[client] = [t for t in _rate[client] if now - t < 60]
+        if len(_rate[client]) >= RATE_LIMIT_PER_MIN:
+            return JSONResponse(status_code=429, content={"error": "rate limited"})
+        _rate[client].append(now)
+    return await call_next(request)
+
 # 启动即加载模型（首次较慢，之后常驻内存）
 gen = Generator()
 
-# 会话: conversation_id -> {"messages": [...], "turns": [...]}
-sessions: dict = {}
+# 会话: conversation_id -> {"messages": [...], "turns": [...]}（内存态多轮上下文，重启丢失）
+conversations: dict = {}
 
 
 def sse(event: str, data: dict) -> str:
@@ -65,7 +98,7 @@ def sse(event: str, data: dict) -> str:
 
 
 @app.get("/api/stream")
-async def stream(text: str, conversation_id: str = ""):
+async def stream(text: str, conversation_id: str = "", anonymous_user_id: str = ""):
     text = (text or "").strip()
 
     if not text:
@@ -84,9 +117,9 @@ async def stream(text: str, conversation_id: str = ""):
 
     if not conversation_id:
         conversation_id = uuid.uuid4().hex[:12]
-    if conversation_id not in sessions:
-        sessions[conversation_id] = {"messages": [], "turns": []}
-    sess = sessions[conversation_id]
+    if conversation_id not in conversations:
+        conversations[conversation_id] = {"messages": [], "turns": []}
+    sess = conversations[conversation_id]
 
     # 上下文瘦身：超过 MAX_TURNS 轮的旧对话从上下文移除（仍保留在新会话之外，仅不再参与计算）
     while len(sess["turns"]) >= MAX_TURNS:
@@ -110,7 +143,16 @@ async def stream(text: str, conversation_id: str = ""):
         TokenData(token_id=t, token_text=gen.token_text(t), position=i).model_dump()
         for i, t in enumerate(input_token_ids)
     ]
+    # 埋点：一次提问 = 一个 session_id，落库
+    session_id = "ses_" + uuid.uuid4().hex[:16]
+    db.create_session(session_id, anonymous_user_id, conversation_id, text)
+    db.insert_event(anonymous_user_id, session_id, "question_submitted",
+                    {"conversation_id": conversation_id})
+    db.insert_event(anonymous_user_id, session_id, "generation_started", {})
+
     meta = MetaData(
+        session_id=session_id,
+        anonymous_user_id=anonymous_user_id,
         conversation_id=conversation_id,
         model="Qwen2.5-0.5B-Instruct",
         input_text=text,
@@ -130,8 +172,8 @@ async def stream(text: str, conversation_id: str = ""):
             text_so_far = ""
             step_count = 0
             stop_reason = "max_tokens"
-            for step, top5, chosen_id, chosen_prob in gen.generate_steps(
-                prompt_ids, MAX_NEW_TOKENS, TEMPERATURE, TOP_P
+            for step, top5, chosen_id, chosen_prob, eos in gen.generate_steps(
+                messages_with_system, MAX_NEW_TOKENS, TEMPERATURE, TOP_P
             ):
                 step_count = step
                 generated_ids.append(chosen_id)
@@ -160,20 +202,28 @@ async def stream(text: str, conversation_id: str = ""):
                     candidates=candidates,
                     selected_token=selected,
                 ).model_dump()))
-                if chosen_id in gen.stop_ids:
+                if eos:
                     stop_reason = "eos"
                     break
 
             final_answer = filter_sensitive(gen.decode(generated_ids))
             sess["messages"].append({"role": "assistant", "content": final_answer})
             sess["turns"].append({"user": text, "assistant": final_answer})
+            duration_ms = int((time.time() - start) * 1000)
+            db.upsert_session(session_id, generation_completed=True,
+                              total_steps=step_count, duration_ms=duration_ms)
+            db.insert_event(anonymous_user_id, session_id, "generation_completed",
+                            {"total_steps": step_count, "duration_ms": duration_ms,
+                             "stop_reason": stop_reason})
             q.put(("done", DoneData(
                 final_answer=final_answer,
                 total_steps=step_count,
-                duration_ms=int((time.time() - start) * 1000),
+                duration_ms=duration_ms,
                 stop_reason=stop_reason,
             ).model_dump()))
         except Exception as e:  # noqa: BLE001
+            db.insert_event(anonymous_user_id, session_id, "generation_error",
+                            {"error_code": "INTERNAL", "message": str(e)})
             q.put(("error", ErrorData(code="INTERNAL", message=str(e)).model_dump()))
         finally:
             q.put((None, None))
@@ -194,12 +244,38 @@ async def stream(text: str, conversation_id: str = ""):
     )
 
 
-# 静态托管前端：访问 http://127.0.0.1:8000 即打开页面
-app.mount(
-    "/",
-    StaticFiles(directory=str(Path(__file__).resolve().parent.parent / "frontend"), html=True),
-    name="frontend",
-)
+@app.post("/api/event")
+async def record_event(e: EventIn):
+    db.insert_event(e.anonymous_user_id, e.session_id or None, e.event, e.data)
+    if e.event == "review_viewed":
+        db.upsert_session(e.session_id, review_viewed=True)
+    elif e.event == "quiz_started":
+        db.upsert_session(e.session_id, quiz_started=True)
+    elif e.event == "quiz_question_answered":
+        d = e.data
+        db.insert_quiz_answer(
+            e.session_id,
+            d.get("question_id", ""),
+            d.get("quiz_version", ""),
+            d.get("option_order", []),
+            d.get("selected_answer", -1),
+            d.get("correct_answer", -1),
+            d.get("is_correct", False),
+        )
+    elif e.event == "quiz_completed":
+        db.upsert_session(e.session_id, quiz_completed=True, quiz_score=e.data.get("score"))
+    return {"ok": True}
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
+
+
+@app.get("/api/_debug/memory")
+async def debug_memory():
+    """开发调试：查看内存态埋点数据（仅本地/非生产环境使用）。"""
+    return db.memory_snapshot()
 
 
 if __name__ == "__main__":
